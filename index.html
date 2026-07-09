@@ -34,26 +34,27 @@
 </script>
 <style>
   :root{
-    --bg: #0B1220;
-    --surface: #121B2E;
-    --surface-2: #182541;
-    --surface-3: #0F1830;
-    --border: #24314f;
-    --text: #E7ECF6;
-    --text-dim: #93A0BE;
-    --accent: #57E1C4;
-    --accent-dim: #2F8F7C;
-    --user-bubble: #23345C;
-    --warn: #F5A524;
-    --error: #F16A6A;
+    --bg: #0A0F1A;
+    --surface: #121A2C;
+    --surface-2: #1A2540;
+    --surface-3: #0E1524;
+    --border: #263356;
+    --text: #EDF2FA;
+    --text-dim: #8C9BC2;
+    --accent: #4FE8C4;
+    --accent-dim: #2C9483;
+    --accent-2: #FFB454;
+    --user-bubble: #243560;
+    --warn: #FFB454;
+    --error: #FF6B6B;
     --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     --display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
 
-    --n-documento: #5b6b8e;
-    --n-modulo: #57E1C4;
-    --n-ator: #F5A524;
+    --n-documento: #6b7aa0;
+    --n-modulo: #4FE8C4;
+    --n-ator: #FFB454;
     --n-rf: #7AA2F7;
-    --n-rnf: #F16A6A;
+    --n-rnf: #FF6B6B;
     --n-catrnf: #C792EA;
     --n-prioridade: #A3E635;
     --n-entidade: #38BDF8;
@@ -62,104 +63,125 @@
   html{ scroll-behavior:smooth; }
   body{
     margin:0; min-height:100vh;
+    overflow-x:hidden;
     background:
-      radial-gradient(circle at 12% 8%, rgba(87,225,196,0.08), transparent 40%),
-      radial-gradient(circle at 88% 92%, rgba(87,225,196,0.06), transparent 45%),
+      radial-gradient(circle at 14% 6%, rgba(79,232,196,0.10), transparent 42%),
+      radial-gradient(circle at 90% 14%, rgba(255,180,84,0.05), transparent 38%),
+      radial-gradient(circle at 88% 94%, rgba(79,232,196,0.07), transparent 45%),
+      radial-gradient(circle, rgba(140,155,194,0.08) 1px, transparent 1px) 0 0/26px 26px,
       var(--bg);
     color: var(--text);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     display:flex; flex-direction:column; align-items:center;
     padding: 26px 16px 40px;
+    -webkit-font-smoothing: antialiased;
   }
   .app{ width:100%; max-width: 1360px; display:flex; flex-direction:column; gap:16px; }
-  :focus-visible{ outline: 2px solid var(--accent); outline-offset:2px; }
+  :focus-visible{ outline: 2px solid var(--accent); outline-offset:2px; border-radius:4px; }
 
   /* Header */
   .header{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
-  .brand{ display:flex; align-items:center; gap:12px; }
-  .brand svg{ width:42px; height:42px; flex-shrink:0; }
-  .brand h1{ font-family:var(--display); font-weight:600; font-size:20px; margin:0; letter-spacing:.2px; }
+  .brand{ display:flex; align-items:center; gap:14px; }
+  .brand svg{ width:44px; height:44px; flex-shrink:0; overflow:visible; }
+  .brand svg circle{ animation: nodePulse 3.2s ease-in-out infinite; transform-origin:center; transform-box:fill-box; }
+  .brand svg circle:nth-child(2){ animation-delay:.35s; }
+  .brand svg circle:nth-child(3){ animation-delay:.7s; }
+  @keyframes nodePulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.18); } }
+  .eyebrow{ display:block; font-family:var(--display); font-size:10px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color: var(--accent-dim); margin-bottom:3px; }
+  .brand h1{ font-family:var(--display); font-weight:600; font-size:21px; margin:0; letter-spacing:.1px; line-height:1.15; }
   .brand-sep{ color: var(--accent); }
-  .brand p{ margin:2px 0 0; font-size:12.5px; color:var(--text-dim); }
+  .brand p{ margin:4px 0 0; font-size:12.5px; color:var(--text-dim); }
   .header-right{ display:flex; align-items:center; gap:12px; }
-  .install-btn{ display:flex; align-items:center; gap:6px; background: linear-gradient(135deg, var(--accent), #3fc9ab); color:#062521; font-weight:700; font-size:12.5px; padding:9px 14px; border-radius:20px; box-shadow: 0 4px 14px rgba(87,225,196,.25); transition: all .15s; }
-  .install-btn:hover{ transform: translateY(-1px); box-shadow: 0 6px 18px rgba(87,225,196,.35); }
-  .status{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-dim); background: var(--surface); border:1px solid var(--border); padding:7px 12px; border-radius:20px; }
+  .install-btn{ display:flex; align-items:center; gap:6px; background: linear-gradient(135deg, var(--accent), #29b596); color:#062521; font-weight:700; font-size:12.5px; padding:9px 14px; border-radius:20px; box-shadow: 0 4px 14px rgba(79,232,196,.25); transition: all .15s; }
+  .install-btn:hover{ transform: translateY(-1px); box-shadow: 0 6px 18px rgba(79,232,196,.35); }
+  .status{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-dim); background: var(--surface); border:1px solid var(--border); padding:7px 13px; border-radius:20px; box-shadow: inset 0 1px 0 rgba(255,255,255,.03); }
   .dot{ width:9px; height:9px; border-radius:50%; background:#5b6b8e; box-shadow:0 0 0 3px rgba(91,107,142,.15); transition: background .2s; }
-  .dot.on{ background: var(--accent); box-shadow:0 0 0 3px rgba(87,225,196,.18); }
-  .dot.err{ background: var(--error); box-shadow:0 0 0 3px rgba(241,106,106,.18); }
+  .dot.on{ background: var(--accent); box-shadow:0 0 0 3px rgba(79,232,196,.18); animation: dotAlive 2.4s ease-in-out infinite; }
+  .dot.err{ background: var(--error); box-shadow:0 0 0 3px rgba(255,107,107,.18); }
+  @keyframes dotAlive{ 0%,100%{ box-shadow:0 0 0 3px rgba(79,232,196,.18); } 50%{ box-shadow:0 0 0 5px rgba(79,232,196,.1); } }
 
   /* Settings panel */
-  details.settings{ background: var(--surface); border:1px solid var(--border); border-radius:14px; }
-  details.settings summary{ list-style:none; cursor:pointer; padding:14px 18px; font-size:13.5px; color:var(--text-dim); display:flex; justify-content:space-between; align-items:center; }
+  details.settings{ background: var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow: 0 12px 32px -18px rgba(0,0,0,.5); }
+  details.settings summary{ list-style:none; cursor:pointer; padding:14px 18px; font-size:13px; font-weight:600; color:var(--text-dim); display:flex; justify-content:space-between; align-items:center; letter-spacing:.2px; }
   details.settings summary::-webkit-details-marker{ display:none; }
-  details.settings summary .chev{ transition: transform .15s; }
+  details.settings summary .chev{ transition: transform .15s; color: var(--accent-dim); }
   details[open] summary .chev{ transform: rotate(90deg); }
-  .settings-body{ padding: 4px 18px 18px; display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+  details.settings summary:hover{ color: var(--text); }
+  .settings-body{ padding: 6px 18px 20px; display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
   .settings-body .full{ grid-column: 1 / -1; }
-  .field label{ display:block; font-size:11.5px; color:var(--text-dim); margin-bottom:5px; text-transform:uppercase; letter-spacing:.4px; }
+  .field label{ display:block; font-size:10.5px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:.6px; font-weight:600; }
   .field input{
-    width:100%; padding:9px 11px; border-radius:9px; border:1px solid var(--border);
-    background: var(--surface-2); color:var(--text); font-size:13.5px; outline:none;
+    width:100%; padding:10px 12px; border-radius:9px; border:1px solid var(--border);
+    background: var(--surface-2); color:var(--text); font-size:13.5px; outline:none; transition: border-color .15s, box-shadow .15s;
   }
-  .field input:focus{ border-color: var(--accent-dim); }
-  .settings-actions{ grid-column:1/-1; display:flex; align-items:center; gap:12px; margin-top:2px; flex-wrap:wrap; }
+  .field input:focus{ border-color: var(--accent-dim); box-shadow: 0 0 0 3px rgba(79,232,196,.10); }
+  .settings-actions{ grid-column:1/-1; display:flex; align-items:center; gap:12px; margin-top:4px; flex-wrap:wrap; }
   button{ font-family:inherit; cursor:pointer; border:none; }
   .btn-primary{
-    background: var(--accent); color:#062521; font-weight:600; font-size:13.5px;
-    padding:10px 18px; border-radius:9px; transition: filter .15s;
+    background: linear-gradient(135deg, var(--accent), #29b596); color:#062521; font-weight:700; font-size:13.5px;
+    padding:11px 20px; border-radius:10px; transition: all .15s; box-shadow: 0 4px 14px rgba(79,232,196,.22);
   }
-  .btn-primary:hover{ filter: brightness(1.08); }
-  .btn-primary:disabled{ opacity:.5; cursor:not-allowed; }
+  .btn-primary:hover{ transform: translateY(-1px); box-shadow: 0 6px 18px rgba(79,232,196,.32); }
+  .btn-primary:disabled{ opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
   .conn-msg{ font-size:12.5px; color: var(--text-dim); }
   .conn-msg.err{ color: var(--error); }
   .conn-msg.ok{ color: var(--accent); }
-  .hint{ font-size:11.5px; color:var(--text-dim); grid-column:1/-1; line-height:1.5; }
+  .hint{ font-size:11.5px; color:var(--text-dim); grid-column:1/-1; line-height:1.6; padding-top:6px; border-top:1px solid var(--border); }
 
   /* Tabs (mobile) */
-  .tabs{ display:none; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:5px; }
+  .tabs{ display:none; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:5px; box-shadow: 0 8px 24px -16px rgba(0,0,0,.5); }
   .tab-btn{ flex:1; background:transparent; color:var(--text-dim); font-size:13px; font-weight:600; padding:9px 10px; border-radius:8px; transition: all .15s; }
-  .tab-btn.active{ background: var(--accent); color:#062521; }
+  .tab-btn.active{ background: linear-gradient(135deg, var(--accent), #29b596); color:#062521; }
 
   /* Main layout */
   .main{ display:grid; grid-template-columns: 1.15fr 1fr; gap:16px; align-items:start; }
 
-  .panel{ background: var(--surface); border:1px solid var(--border); border-radius:16px; display:flex; flex-direction:column; overflow:hidden; }
+  .panel{ background: var(--surface); border:1px solid var(--border); border-radius:16px; display:flex; flex-direction:column; overflow:hidden; position:relative; box-shadow: 0 12px 32px -16px rgba(0,0,0,.5); }
+  .panel::before{ content:''; position:absolute; top:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent, rgba(79,232,196,.35), transparent); pointer-events:none; }
 
   /* ---- Graph panel ---- */
   .panel-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 16px 10px; flex-wrap:wrap; }
   .presets{ display:flex; flex-wrap:wrap; gap:7px; }
   .preset-btn{ background: var(--surface-2); border:1px solid var(--border); color:var(--text-dim); font-size:12.5px; padding:8px 14px; border-radius:20px; transition: all .15s; white-space:nowrap; }
-  .preset-btn:hover{ color:var(--text); border-color:var(--accent-dim); }
-  .preset-btn.active{ background: var(--accent); color:#062521; border-color:var(--accent); font-weight:600; }
+  .preset-btn:hover{ color:var(--text); border-color:var(--accent-dim); transform: translateY(-1px); }
+  .preset-btn.active{ background: linear-gradient(135deg, var(--accent), #29b596); color:#062521; border-color:var(--accent); font-weight:700; box-shadow: 0 3px 10px rgba(79,232,196,.22); }
 
   .graph-controls{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:0 16px 12px; border-bottom:1px solid var(--border); }
   .search-group{ display:flex; gap:6px; flex:1; min-width:190px; }
-  .search-group input{ flex:1; padding:8px 11px; border-radius:8px; border:1px solid var(--border); background: var(--surface-2); color:var(--text); font-size:12.5px; outline:none; }
+  .search-group input{ flex:1; padding:8px 11px; border-radius:8px; border:1px solid var(--border); background: var(--surface-2); color:var(--text); font-size:12.5px; outline:none; transition: border-color .15s; }
   .search-group input:focus{ border-color: var(--accent-dim); }
   .limit-group{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.3px; }
   .limit-group input{ width:62px; padding:7px 8px; border-radius:8px; border:1px solid var(--border); background: var(--surface-2); color:var(--text); font-size:12px; outline:none; }
   .graph-actions{ display:flex; gap:6px; flex-wrap:wrap; }
   .icon-btn{ background: var(--surface-2); border:1px solid var(--border); color:var(--text-dim); font-size:12.5px; padding:8px 12px; border-radius:9px; transition: all .15s; }
-  .icon-btn:hover{ color:var(--text); border-color:var(--accent-dim); }
-  .graph-stats{ margin-left:auto; font-size:11px; color:var(--text-dim); white-space:nowrap; }
+  .icon-btn:hover{ color: var(--accent); border-color:var(--accent-dim); background: var(--surface-3); }
+  .graph-stats{ margin-left:auto; font-size:11px; color:var(--text-dim); white-space:nowrap; font-variant-numeric: tabular-nums; }
 
   .graph-body{ display:flex; gap:12px; padding:14px 16px; flex:1; min-height: 0; }
-  .graph-canvas-wrap{ position:relative; flex:1; min-width:0; height: 480px; background: var(--surface-3); border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,.02); }
+  .graph-canvas-wrap{ position:relative; flex:1; min-width:0; height: min(58vh, 520px); min-height:340px; background: var(--surface-3); border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,.02); }
   .graph-canvas-wrap:fullscreen{ height:100vh; border-radius:0; }
   #graphCanvas{ width:100%; height:100%; cursor:grab; }
-  .graph-empty{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:24px; font-size:13.5px; color:var(--text-dim); background: var(--surface-3); }
-  .legend{ position:absolute; left:10px; bottom:10px; display:flex; flex-wrap:wrap; gap:6px 10px; max-width:80%; background: rgba(11,18,32,0.72); backdrop-filter: blur(4px); border:1px solid var(--border); border-radius:9px; padding:8px 10px; }
-  .legend-item{ display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--text-dim); background:none; border:none; padding:2px; transition: opacity .15s; }
+  .graph-empty{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; text-align:center; padding:24px; font-size:13.5px; color:var(--text-dim); background: var(--surface-3); }
+  .graph-empty::before{
+    content:''; width:40px; height:40px; flex-shrink:0; opacity:.5;
+    background-image: radial-gradient(circle, var(--accent-dim) 3px, transparent 3.5px);
+    background-size: 20px 20px;
+    background-position: 0 0, 20px 20px;
+    background-repeat: repeat;
+    -webkit-mask-image: radial-gradient(circle at center, black 45%, transparent 70%);
+    mask-image: radial-gradient(circle at center, black 45%, transparent 70%);
+  }
+  .legend{ position:absolute; left:10px; bottom:10px; display:flex; flex-wrap:wrap; gap:6px 10px; max-width:80%; background: rgba(10,15,26,0.78); backdrop-filter: blur(6px); border:1px solid var(--border); border-radius:10px; padding:8px 11px; box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+  .legend-item{ display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--text-dim); background:none; border:none; padding:2px; transition: opacity .15s, color .15s; }
   .legend-item:hover{ color:var(--text); }
   .legend-item.off{ opacity:.35; text-decoration: line-through; }
-  .legend-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; display:inline-block; vertical-align:middle; margin-right:5px; }
+  .legend-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; display:inline-block; vertical-align:middle; margin-right:5px; box-shadow: 0 0 6px currentColor; }
   .detail-row.estado-row{ background: var(--surface-3); border-radius:8px; padding:7px 8px; border-bottom:none; }
   .legend-note{ opacity:.6; font-size:9.5px; }
   .legend-sep{ width:1px; align-self:stretch; background:var(--border); margin:0 2px; }
   .legend-item.legend-estado{ cursor:default; font-weight:600; }
 
-  .node-details{ width:240px; flex-shrink:0; background: var(--surface-2); border:1px solid var(--border); border-radius:14px; padding:16px; overflow-y:auto; height:480px; display:flex; flex-direction:column; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+  .node-details{ width:240px; flex-shrink:0; background: var(--surface-2); border:1px solid var(--border); border-radius:14px; padding:16px; overflow-y:auto; height: min(58vh, 520px); min-height:340px; display:flex; flex-direction:column; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
   .node-details-empty{ font-size:12.5px; color:var(--text-dim); line-height:1.5; }
   .detail-actions{ display:flex; gap:6px; margin-top:14px; }
   .detail-action{ flex:1; background: var(--surface); border:1px solid var(--border); color:var(--text-dim); font-size:11px; padding:8px 6px; border-radius:8px; transition: all .15s; }
@@ -249,7 +271,7 @@
 
   .conv-sidebar{ width:220px; flex-shrink:0; border-right:1px solid var(--border); background: var(--surface-3); display:flex; flex-direction:column; transition: transform .25s ease; }
   .new-conv-btn{ margin:12px 14px 8px; background: var(--surface-2); border:1px solid var(--accent-dim); color: var(--accent); font-size:12.5px; font-weight:700; padding:10px 10px; border-radius:10px; transition: all .15s; }
-  .new-conv-btn:hover{ background: var(--accent); color:#062521; box-shadow: 0 4px 14px rgba(87,225,196,.25); }
+  .new-conv-btn:hover{ background: var(--accent); color:#062521; box-shadow: 0 4px 14px rgba(79,232,196,.25); }
   .conv-list{ flex:1; overflow-y:auto; padding:4px 10px 12px; display:flex; flex-direction:column; gap:4px; }
   .conv-item{ display:flex; align-items:center; justify-content:space-between; gap:6px; padding:10px 11px; border-radius:10px; cursor:pointer; transition: background .15s; }
   .conv-item:hover{ background: var(--surface-2); }
@@ -267,7 +289,12 @@
   .msg{ max-width:80%; display:flex; flex-direction:column; gap:6px; animation: msgIn .18s ease; }
   @keyframes msgIn{ from{ opacity:0; transform: translateY(4px); } to{ opacity:1; transform:none; } }
   .msg.user{ align-self:flex-end; align-items:flex-end; }
-  .msg.bot{ align-self:flex-start; align-items:flex-start; }
+  .msg.bot{ align-self:flex-start; align-items:flex-start; position:relative; padding-left:32px; }
+  .msg.bot::before{
+    content:''; position:absolute; left:0; top:3px; width:22px; height:22px; border-radius:50%;
+    background: radial-gradient(circle at 32% 28%, var(--accent), var(--accent-dim) 70%);
+    box-shadow: 0 0 0 3px rgba(79,232,196,.12);
+  }
   .bubble{ padding:12px 16px; border-radius:16px; font-size:14.5px; line-height:1.62; white-space:pre-wrap; }
   .msg.user .bubble{ background: linear-gradient(135deg, var(--user-bubble), #2a3d6e); border-bottom-right-radius:4px; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
   .msg.bot .bubble{ background: var(--surface-2); border: 1px solid var(--border); border-bottom-left-radius:4px; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
@@ -286,7 +313,7 @@
     color:var(--text); font-size:15px; font-family:inherit; outline:none; line-height:1.5;
   }
   .composer textarea::placeholder{ color: var(--text-dim); }
-  .send-btn{ background: linear-gradient(135deg, var(--accent), #3fc9ab); color:#062521; border-radius:14px; width:42px; height:42px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition: all .15s; box-shadow: 0 3px 10px rgba(87,225,196,.25); }
+  .send-btn{ background: linear-gradient(135deg, var(--accent), #29b596); color:#062521; border-radius:14px; width:42px; height:42px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition: all .15s; box-shadow: 0 3px 10px rgba(79,232,196,.25); }
   .send-btn:hover:not(:disabled){ transform: scale(1.05); }
   .send-btn:disabled{ opacity:.35; cursor:not-allowed; box-shadow:none; }
 
@@ -368,25 +395,52 @@
   @media (min-width: 981px){
     .panel{ display:flex !important; }
   }
+
+  /* Tablet: o grafo e o painel de detalhes passam a empilhar mais cedo,
+     antes de ficarem espremidos lado a lado. */
+  @media (max-width: 900px){
+    .graph-body{ flex-direction:column; }
+    .node-details, .graph-canvas-wrap{ width:100%; }
+    .graph-canvas-wrap{ height:min(50vh, 420px); min-height:280px; }
+    .node-details{ height:220px; min-height:180px; }
+  }
+
   @media (max-width: 720px){
-    body{ padding: 14px 8px 24px; }
+    body{ padding: 14px 8px 24px; overflow-x:hidden; }
     .header{ gap:10px; }
     .brand p{ display:none; }
     .settings-body{ grid-template-columns: 1fr; }
     .msg{ max-width:92%; }
-    .graph-body{ flex-direction:column; }
-    .node-details, .graph-canvas-wrap{ width:100%; height:320px; }
+    .graph-canvas-wrap{ height:min(46vh, 360px); min-height:260px; }
+    .node-details{ height:200px; }
+    .graph-controls{ gap:8px; }
+    .search-group{ min-width:100%; }
+    .limit-group{ order:1; }
+    .graph-actions{ order:2; width:100%; }
+    .graph-stats{ order:3; margin-left:0; }
 
-    /* Chat quase a ecrã inteiro, sem alturas fixas espremidas */
-    .chat-shell{ height: calc(100dvh - 158px); min-height:420px; }
+    /* Chat ocupa a maior parte do ecrã, sem depender de um valor fixo
+       adivinhado (que parte facilmente quando o painel de definições
+       muda de altura) — usa uma fração do viewport, tal como no desktop. */
+    .chat-shell{ height: min(68dvh, 640px); min-height:380px; }
     .chat-log{ padding:16px 14px 8px; }
     .chat-toolbar{ padding:8px 10px; }
     .composer{ padding:10px 10px 12px; }
     .suggestions{ padding: 4px 12px 12px; }
 
+    /* Alvos de toque maiores, mais confortáveis num telemóvel */
+    .icon-btn, .tb-btn{ padding:10px 13px; min-height:40px; }
+    .send-btn{ width:46px; height:46px; }
+    .chip{ padding:9px 14px; }
+
+    /* Impede o zoom automático do iOS Safari ao focar campos com <16px */
+    .field input, .search-group input, .limit-group input, .custom-cypher textarea,
+    .composer textarea, .mem-add-row input, .project-select, #groqModel, #tavilyKey,
+    #graphSearch, #limitInput, #personalitySelect{ font-size:16px; }
+
     /* Sidebar de conversas/projetos passa a drawer deslizante */
     .chat-main-head{ display:flex; align-items:center; padding:10px 12px; border-bottom:1px solid var(--border); background: var(--surface-3); }
-    .sidebar-toggle-btn{ display:flex; align-items:center; gap:7px; background: var(--surface-2); border:1px solid var(--border); color:var(--text); font-size:12.5px; font-weight:600; padding:8px 12px; border-radius:9px; }
+    .sidebar-toggle-btn{ display:flex; align-items:center; gap:7px; background: var(--surface-2); border:1px solid var(--border); color:var(--text); font-size:12.5px; font-weight:600; padding:9px 13px; border-radius:9px; min-height:40px; }
     .conv-sidebar{
       position:absolute; left:0; top:0; bottom:0; width:82vw; max-width:300px; z-index:50;
       transform: translateX(-105%); box-shadow: 10px 0 34px rgba(0,0,0,.45);
@@ -396,6 +450,7 @@
   }
   @media (prefers-reduced-motion: reduce){
     html{ scroll-behavior:auto; }
+    .brand svg circle, .dot.on{ animation:none !important; }
   }
 </style>
 </head>
@@ -405,14 +460,15 @@
   <div class="header">
     <div class="brand">
       <svg viewBox="0 0 40 40" fill="none">
-        <circle cx="20" cy="8" r="4" fill="#57E1C4"/>
-        <circle cx="8" cy="28" r="4" fill="#57E1C4" opacity="0.75"/>
-        <circle cx="32" cy="28" r="4" fill="#57E1C4" opacity="0.55"/>
-        <line x1="20" y1="8" x2="8" y2="28" stroke="#57E1C4" stroke-width="1.4" opacity="0.5"/>
-        <line x1="20" y1="8" x2="32" y2="28" stroke="#57E1C4" stroke-width="1.4" opacity="0.5"/>
-        <line x1="8" y1="28" x2="32" y2="28" stroke="#57E1C4" stroke-width="1.4" opacity="0.3"/>
+        <circle cx="20" cy="8" r="4" fill="#4FE8C4"/>
+        <circle cx="8" cy="28" r="4" fill="#4FE8C4" opacity="0.75"/>
+        <circle cx="32" cy="28" r="4" fill="#4FE8C4" opacity="0.55"/>
+        <line x1="20" y1="8" x2="8" y2="28" stroke="#4FE8C4" stroke-width="1.4" opacity="0.5"/>
+        <line x1="20" y1="8" x2="32" y2="28" stroke="#4FE8C4" stroke-width="1.4" opacity="0.5"/>
+        <line x1="8" y1="28" x2="32" y2="28" stroke="#4FE8C4" stroke-width="1.4" opacity="0.3"/>
       </svg>
       <div>
+        <span class="eyebrow">Grafo de requisitos · IA</span>
         <h1>FitBro <span class="brand-sep">·</span> Explorador do Grafo</h1>
         <p>Visualiza o grafo de requisitos e conversa com ele — em linguagem natural</p>
       </div>
@@ -504,7 +560,7 @@
         <div class="graph-canvas-wrap" id="graphCanvasWrap">
           <div id="graphCanvas"></div>
           <div class="legend" id="legend"></div>
-          <div class="graph-empty" id="graphEmpty">Liga-te ao Neo4j Aura para visualizar o grafo.</div>
+          <div class="graph-empty" id="graphEmpty">O teu grafo está à espera. Liga-te ao Neo4j Aura acima para o veres ganhar vida.</div>
         </div>
         <div class="node-details" id="nodeDetails">
           <div class="node-details-empty">Clica num nó ou relação para ver os detalhes. Duplo-clique num nó expande os seus vizinhos diretamente no grafo.</div>
@@ -1703,7 +1759,7 @@ function renderFileChart(file) {
   chatLog.scrollTop = chatLog.scrollHeight;
   new Chart(canvas, {
     type: 'bar',
-    data: { labels, datasets: [{ label: header[valueColIdx] || 'Valor', data: values, backgroundColor: '#57E1C4' }] },
+    data: { labels, datasets: [{ label: header[valueColIdx] || 'Valor', data: values, backgroundColor: '#4FE8C4' }] },
     options: { responsive: true, plugins: { legend: { labels: { color: '#E7ECF6' } } },
       scales: { x: { ticks: { color: '#93A0BE' } }, y: { ticks: { color: '#93A0BE' } } } }
   });
@@ -2311,10 +2367,10 @@ async function submit() {
 
 const LABEL_COLORS = {
   Documento: 'var(--n-documento)'.trim(),
-  Modulo: '#57E1C4',
-  Ator: '#F5A524',
+  Modulo: '#4FE8C4',
+  Ator: '#FFB454',
   RequisitoFuncional: '#7AA2F7',
-  RequisitoNaoFuncional: '#F16A6A',
+  RequisitoNaoFuncional: '#FF6B6B',
   CategoriaRNF: '#C792EA',
   Prioridade: '#A3E635',
   EntidadeDados: '#38BDF8',
@@ -2323,7 +2379,7 @@ const LABEL_COLORS = {
   Funcionalidade: '#4DD0E1'
 };
 // resolve CSS var fallback for Documento (var() strings don't work as inline canvas colors)
-LABEL_COLORS.Documento = '#5b6b8e';
+LABEL_COLORS.Documento = '#6b7aa0';
 
 const LABEL_NAMES_PT = {
   Documento: 'Documento',
@@ -2364,8 +2420,8 @@ const VIS_OPTIONS = {
   layout: { improvedLayout: true }
 };
 
-const EDGE_COLOR_DIM = { color: 'rgba(147,160,190,0.35)', highlight: '#57E1C4' };
-const EDGE_COLOR_FADED = { color: 'rgba(147,160,190,0.05)', highlight: '#57E1C4' };
+const EDGE_COLOR_DIM = { color: 'rgba(147,160,190,0.35)', highlight: '#4FE8C4' };
+const EDGE_COLOR_FADED = { color: 'rgba(147,160,190,0.05)', highlight: '#4FE8C4' };
 
 let network = null, nodesDS = null, edgesDS = null, physicsOn = true;
 let hiddenGroups = new Set();
@@ -2596,7 +2652,7 @@ function highlightNeighbors(nodeId) {
   })));
   edgesDS.update(edgesDS.get().map(e => ({
     id: e.id,
-    color: connectedEdges.has(e.id) ? { color: '#57E1C4', highlight: '#57E1C4' } : { ...EDGE_COLOR_FADED }
+    color: connectedEdges.has(e.id) ? { color: '#4FE8C4', highlight: '#4FE8C4' } : { ...EDGE_COLOR_FADED }
   })));
   hoverActive = true;
 }
@@ -2653,6 +2709,7 @@ function renderGraph(cypher, params) {
       network.on('hoverNode', p => highlightNeighbors(p.node));
       network.on('blurNode', clearHighlight);
       network.on('stabilizationIterationsDone', () => { if (physicsOn) network.setOptions({ physics: { enabled: false } }); });
+      setupGraphResizeObserver();
     } else {
       nodesDS.clear(); edgesDS.clear();
       nodesDS.add(nodes); edgesDS.add(edges);
@@ -2663,10 +2720,43 @@ function renderGraph(cypher, params) {
     updateLegend(nodes);
     updateStats();
     clearDetails();
+    forceGraphResize();
   }).catch(err => {
     emptyEl.textContent = 'Erro ao consultar o grafo: ' + err.message;
     emptyEl.style.display = 'flex';
   });
+}
+
+// -------- Correção: o vis-network só recalcula o tamanho do canvas em eventos de
+// resize da janela — se o container estiver escondido/com tamanho 0 no momento em
+// que a rede é criada (ex.: tab "Chat" ativa em mobile, sidebar a abrir/fechar, ecrã
+// a rodar), o grafo fica em branco até um resize real acontecer (ex.: ecrã inteiro).
+// Isto observa o próprio contentor e força um redraw/fit sempre que o tamanho muda. --------
+let graphResizeObserver = null;
+function forceGraphResize() {
+  if (!network) return;
+  network.setSize('100%', '100%');
+  network.redraw();
+  network.fit({ animation: false });
+  // segunda passagem: garante que apanha o layout final depois de eventuais
+  // transições CSS (colapso do painel de definições, troca de tab, etc.)
+  requestAnimationFrame(() => {
+    if (!network) return;
+    network.setSize('100%', '100%');
+    network.redraw();
+    network.fit({ animation: false });
+  });
+  setTimeout(() => { if (network) { network.redraw(); network.fit({ animation: false }); } }, 250);
+}
+function setupGraphResizeObserver() {
+  if (graphResizeObserver || !window.ResizeObserver) return;
+  const wrap = document.getElementById('graphCanvasWrap');
+  graphResizeObserver = new ResizeObserver(() => {
+    if (!network) return;
+    network.setSize('100%', '100%');
+    network.redraw();
+  });
+  graphResizeObserver.observe(wrap);
 }
 
 function renderPresets() {
@@ -2733,7 +2823,9 @@ document.getElementById('fullscreenBtn').addEventListener('click', () => {
     document.exitFullscreen?.();
   }
 });
-document.addEventListener('fullscreenchange', () => { if (network) setTimeout(() => network.fit(), 150); });
+document.addEventListener('fullscreenchange', () => { if (network) setTimeout(() => forceGraphResize(), 150); });
+window.addEventListener('resize', () => { if (network) forceGraphResize(); });
+window.addEventListener('orientationchange', () => { if (network) setTimeout(() => forceGraphResize(), 300); });
 document.getElementById('exportBtn').addEventListener('click', () => {
   const canvas = document.querySelector('#graphCanvas canvas');
   if (!canvas) return;
@@ -2752,7 +2844,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     const tab = btn.dataset.tab;
     document.getElementById('graphPanel').classList.toggle('active', tab === 'graph');
     document.getElementById('chatPanel').classList.toggle('active', tab === 'chat');
-    if (tab === 'graph' && network) setTimeout(() => network.fit(), 60);
+    if (tab === 'graph' && network) setTimeout(() => forceGraphResize(), 60);
   });
 });
 
