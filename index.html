@@ -1,0 +1,2800 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FitBro · Explorador do Grafo & Chat</title>
+
+<!-- PWA: instalável no Android (Adicionar ao ecrã principal) e no desktop -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0B1220">
+<meta name="background-color" content="#0B1220">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FitBro">
+<link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="icon-512.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/neo4j-driver@5.24.0/lib/browser/neo4j-web.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.2/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+  }
+</script>
+<style>
+  :root{
+    --bg: #0B1220;
+    --surface: #121B2E;
+    --surface-2: #182541;
+    --surface-3: #0F1830;
+    --border: #24314f;
+    --text: #E7ECF6;
+    --text-dim: #93A0BE;
+    --accent: #57E1C4;
+    --accent-dim: #2F8F7C;
+    --user-bubble: #23345C;
+    --warn: #F5A524;
+    --error: #F16A6A;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+
+    --n-documento: #5b6b8e;
+    --n-modulo: #57E1C4;
+    --n-ator: #F5A524;
+    --n-rf: #7AA2F7;
+    --n-rnf: #F16A6A;
+    --n-catrnf: #C792EA;
+    --n-prioridade: #A3E635;
+    --n-entidade: #38BDF8;
+  }
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; min-height:100vh;
+    background:
+      radial-gradient(circle at 12% 8%, rgba(87,225,196,0.08), transparent 40%),
+      radial-gradient(circle at 88% 92%, rgba(87,225,196,0.06), transparent 45%),
+      var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+    padding: 26px 16px 40px;
+  }
+  .app{ width:100%; max-width: 1360px; display:flex; flex-direction:column; gap:16px; }
+  :focus-visible{ outline: 2px solid var(--accent); outline-offset:2px; }
+
+  /* Header */
+  .header{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand svg{ width:42px; height:42px; flex-shrink:0; }
+  .brand h1{ font-family:var(--display); font-weight:600; font-size:20px; margin:0; letter-spacing:.2px; }
+  .brand-sep{ color: var(--accent); }
+  .brand p{ margin:2px 0 0; font-size:12.5px; color:var(--text-dim); }
+  .header-right{ display:flex; align-items:center; gap:12px; }
+  .install-btn{ display:flex; align-items:center; gap:6px; background: linear-gradient(135deg, var(--accent), #3fc9ab); color:#062521; font-weight:700; font-size:12.5px; padding:9px 14px; border-radius:20px; box-shadow: 0 4px 14px rgba(87,225,196,.25); transition: all .15s; }
+  .install-btn:hover{ transform: translateY(-1px); box-shadow: 0 6px 18px rgba(87,225,196,.35); }
+  .status{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-dim); background: var(--surface); border:1px solid var(--border); padding:7px 12px; border-radius:20px; }
+  .dot{ width:9px; height:9px; border-radius:50%; background:#5b6b8e; box-shadow:0 0 0 3px rgba(91,107,142,.15); transition: background .2s; }
+  .dot.on{ background: var(--accent); box-shadow:0 0 0 3px rgba(87,225,196,.18); }
+  .dot.err{ background: var(--error); box-shadow:0 0 0 3px rgba(241,106,106,.18); }
+
+  /* Settings panel */
+  details.settings{ background: var(--surface); border:1px solid var(--border); border-radius:14px; }
+  details.settings summary{ list-style:none; cursor:pointer; padding:14px 18px; font-size:13.5px; color:var(--text-dim); display:flex; justify-content:space-between; align-items:center; }
+  details.settings summary::-webkit-details-marker{ display:none; }
+  details.settings summary .chev{ transition: transform .15s; }
+  details[open] summary .chev{ transform: rotate(90deg); }
+  .settings-body{ padding: 4px 18px 18px; display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+  .settings-body .full{ grid-column: 1 / -1; }
+  .field label{ display:block; font-size:11.5px; color:var(--text-dim); margin-bottom:5px; text-transform:uppercase; letter-spacing:.4px; }
+  .field input{
+    width:100%; padding:9px 11px; border-radius:9px; border:1px solid var(--border);
+    background: var(--surface-2); color:var(--text); font-size:13.5px; outline:none;
+  }
+  .field input:focus{ border-color: var(--accent-dim); }
+  .settings-actions{ grid-column:1/-1; display:flex; align-items:center; gap:12px; margin-top:2px; flex-wrap:wrap; }
+  button{ font-family:inherit; cursor:pointer; border:none; }
+  .btn-primary{
+    background: var(--accent); color:#062521; font-weight:600; font-size:13.5px;
+    padding:10px 18px; border-radius:9px; transition: filter .15s;
+  }
+  .btn-primary:hover{ filter: brightness(1.08); }
+  .btn-primary:disabled{ opacity:.5; cursor:not-allowed; }
+  .conn-msg{ font-size:12.5px; color: var(--text-dim); }
+  .conn-msg.err{ color: var(--error); }
+  .conn-msg.ok{ color: var(--accent); }
+  .hint{ font-size:11.5px; color:var(--text-dim); grid-column:1/-1; line-height:1.5; }
+
+  /* Tabs (mobile) */
+  .tabs{ display:none; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:5px; }
+  .tab-btn{ flex:1; background:transparent; color:var(--text-dim); font-size:13px; font-weight:600; padding:9px 10px; border-radius:8px; transition: all .15s; }
+  .tab-btn.active{ background: var(--accent); color:#062521; }
+
+  /* Main layout */
+  .main{ display:grid; grid-template-columns: 1.15fr 1fr; gap:16px; align-items:start; }
+
+  .panel{ background: var(--surface); border:1px solid var(--border); border-radius:16px; display:flex; flex-direction:column; overflow:hidden; }
+
+  /* ---- Graph panel ---- */
+  .panel-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 16px 10px; flex-wrap:wrap; }
+  .presets{ display:flex; flex-wrap:wrap; gap:7px; }
+  .preset-btn{ background: var(--surface-2); border:1px solid var(--border); color:var(--text-dim); font-size:12.5px; padding:8px 14px; border-radius:20px; transition: all .15s; white-space:nowrap; }
+  .preset-btn:hover{ color:var(--text); border-color:var(--accent-dim); }
+  .preset-btn.active{ background: var(--accent); color:#062521; border-color:var(--accent); font-weight:600; }
+
+  .graph-controls{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:0 16px 12px; border-bottom:1px solid var(--border); }
+  .search-group{ display:flex; gap:6px; flex:1; min-width:190px; }
+  .search-group input{ flex:1; padding:8px 11px; border-radius:8px; border:1px solid var(--border); background: var(--surface-2); color:var(--text); font-size:12.5px; outline:none; }
+  .search-group input:focus{ border-color: var(--accent-dim); }
+  .limit-group{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.3px; }
+  .limit-group input{ width:62px; padding:7px 8px; border-radius:8px; border:1px solid var(--border); background: var(--surface-2); color:var(--text); font-size:12px; outline:none; }
+  .graph-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+  .icon-btn{ background: var(--surface-2); border:1px solid var(--border); color:var(--text-dim); font-size:12.5px; padding:8px 12px; border-radius:9px; transition: all .15s; }
+  .icon-btn:hover{ color:var(--text); border-color:var(--accent-dim); }
+  .graph-stats{ margin-left:auto; font-size:11px; color:var(--text-dim); white-space:nowrap; }
+
+  .graph-body{ display:flex; gap:12px; padding:14px 16px; flex:1; min-height: 0; }
+  .graph-canvas-wrap{ position:relative; flex:1; min-width:0; height: 480px; background: var(--surface-3); border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,.02); }
+  .graph-canvas-wrap:fullscreen{ height:100vh; border-radius:0; }
+  #graphCanvas{ width:100%; height:100%; cursor:grab; }
+  .graph-empty{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:24px; font-size:13.5px; color:var(--text-dim); background: var(--surface-3); }
+  .legend{ position:absolute; left:10px; bottom:10px; display:flex; flex-wrap:wrap; gap:6px 10px; max-width:80%; background: rgba(11,18,32,0.72); backdrop-filter: blur(4px); border:1px solid var(--border); border-radius:9px; padding:8px 10px; }
+  .legend-item{ display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--text-dim); background:none; border:none; padding:2px; transition: opacity .15s; }
+  .legend-item:hover{ color:var(--text); }
+  .legend-item.off{ opacity:.35; text-decoration: line-through; }
+  .legend-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; display:inline-block; vertical-align:middle; margin-right:5px; }
+  .detail-row.estado-row{ background: var(--surface-3); border-radius:8px; padding:7px 8px; border-bottom:none; }
+  .legend-note{ opacity:.6; font-size:9.5px; }
+  .legend-sep{ width:1px; align-self:stretch; background:var(--border); margin:0 2px; }
+  .legend-item.legend-estado{ cursor:default; font-weight:600; }
+
+  .node-details{ width:240px; flex-shrink:0; background: var(--surface-2); border:1px solid var(--border); border-radius:14px; padding:16px; overflow-y:auto; height:480px; display:flex; flex-direction:column; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+  .node-details-empty{ font-size:12.5px; color:var(--text-dim); line-height:1.5; }
+  .detail-actions{ display:flex; gap:6px; margin-top:14px; }
+  .detail-action{ flex:1; background: var(--surface); border:1px solid var(--border); color:var(--text-dim); font-size:11px; padding:8px 6px; border-radius:8px; transition: all .15s; }
+  .detail-action:hover{ color:var(--text); border-color:var(--accent-dim); }
+  .detail-action.primary{ border-color:var(--accent-dim); color:var(--accent); }
+  .detail-action.primary:hover{ background: var(--accent); color:#062521; }
+  .detail-header{ margin-bottom:10px; }
+  .detail-badge{ display:inline-block; font-family:var(--display); font-size:11.5px; font-weight:600; color:#0B1220; padding:4px 10px; border-radius:20px; }
+  .detail-badge.rel{ background: var(--text-dim) !important; }
+  .detail-rows{ display:flex; flex-direction:column; gap:8px; }
+  .detail-row{ display:flex; flex-direction:column; gap:2px; border-bottom:1px solid var(--border); padding-bottom:7px; }
+  .detail-key{ font-size:10px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-dim); }
+  .detail-val{ font-size:12.5px; word-break:break-word; line-height:1.4; }
+  .detail-empty{ font-size:12px; color:var(--text-dim); }
+
+  .custom-cypher{ display:flex; gap:8px; align-items:flex-end; padding:0 16px 16px; }
+  .custom-cypher textarea{ flex:1; resize:none; height:52px; padding:9px 11px; border-radius:9px; border:1px solid var(--border); background: var(--surface-2); color:var(--text); font-family:var(--mono); font-size:12px; outline:none; }
+  .custom-cypher textarea:focus{ border-color: var(--accent-dim); }
+  .custom-cypher button{ background: var(--surface-2); border:1px solid var(--accent-dim); color:var(--accent); font-size:12.5px; font-weight:600; padding:9px 14px; border-radius:9px; height:52px; transition: all .15s; }
+  .custom-cypher button:hover{ background: var(--accent); color:#062521; }
+  .cypher-hint{ font-size:10.5px; color:var(--text-dim); padding:0 16px 12px; margin-top:-8px; }
+
+  /* ---- Chat panel ---- */
+  .chat-shell{ display:flex; height: min(76vh, 780px); min-height:540px; position:relative; }
+  .chat-shell.canvas-open .chat-main{ border-right:1px solid var(--border); }
+
+  .sidebar-backdrop{ display:none; position:fixed; inset:0; background:rgba(5,9,18,.55); backdrop-filter: blur(1px); z-index:45; }
+  .sidebar-backdrop.show{ display:block; }
+  .sidebar-toggle-btn{ display:none; }
+
+  /* Projetos */
+  .project-bar{ padding:12px 14px 0; display:flex; flex-direction:column; gap:7px; }
+  .project-row{ display:flex; gap:6px; }
+  .project-select{ flex:1; min-width:0; background: var(--surface-2); border:1px solid var(--border); color:var(--text); font-size:12.5px; padding:8px 9px; border-radius:9px; }
+  .project-icon-btn{ background: var(--surface-2); border:1px solid var(--border); color:var(--text-dim); font-size:12px; width:30px; height:30px; border-radius:9px; flex-shrink:0; transition: all .15s; }
+  .project-icon-btn:hover{ color:var(--accent); border-color:var(--accent-dim); }
+  .project-hint{ font-size:10.5px; color:var(--text-dim); padding-bottom:8px; margin-bottom:2px; border-bottom:1px solid var(--border); line-height:1.5; }
+
+  /* Router / agente badge */
+  .route-badge{ display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:600; letter-spacing:.02em; color: var(--accent); background: rgba(87,225,196,0.10); border:1px solid var(--accent-dim); padding:3px 9px; border-radius:20px; margin-bottom:6px; text-transform:uppercase; }
+  .msg.bot .route-badge{ align-self:flex-start; }
+
+  /* Pipeline de execução (stage track) */
+  .stage-track{ display:none; align-items:center; gap:6px; padding:10px 18px; flex-wrap:wrap; background: var(--surface-3); border-bottom:1px solid var(--border); }
+  .stage-track.show{ display:flex; }
+  .stage-chip{ display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-dim); background:var(--surface-2); border:1px solid var(--border); padding:5px 11px; border-radius:20px; transition: all .2s; }
+  .stage-chip .dot{ width:6px; height:6px; border-radius:50%; background:var(--text-dim); flex-shrink:0; }
+  .stage-chip.active{ color:var(--accent); border-color:var(--accent-dim); background: rgba(87,225,196,0.08); }
+  .stage-chip.active .dot{ background:var(--accent); animation: pulse 1s infinite; }
+  .stage-chip.done{ color: var(--text); }
+  .stage-chip.done .dot{ background: var(--accent); animation:none; }
+  .stage-arrow{ color:var(--text-dim); font-size:11px; }
+
+  /* Streaming cursor */
+  .bubble .stream-cursor{ display:inline-block; width:7px; height:15px; margin-left:2px; background:var(--accent); vertical-align:text-bottom; animation: blink 0.9s infinite; }
+  @keyframes blink{ 0%,49%{opacity:1;} 50%,100%{opacity:0;} }
+
+  /* Planeador de tarefas */
+  .plan-box{ background: var(--surface-2); border:1px solid var(--border); border-radius:14px; padding:14px 16px; display:flex; flex-direction:column; gap:8px; max-width:92%; box-shadow: 0 4px 16px rgba(0,0,0,.15); }
+  .plan-title{ font-size:13px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:6px; margin-bottom:2px; }
+  .plan-step{ display:flex; align-items:flex-start; gap:8px; font-size:13px; color:var(--text-dim); padding:7px 9px; border-radius:9px; transition: background .2s; }
+  .plan-step.active{ background:rgba(87,225,196,0.08); color:var(--text); }
+  .plan-step.done{ color:var(--text); }
+  .plan-step.error{ color:var(--error); }
+  .plan-step .step-icon{ flex-shrink:0; width:16px; text-align:center; }
+  .plan-step .step-text{ flex:1; min-width:0; }
+  .plan-step .step-result{ font-size:11.5px; color:var(--text-dim); margin-top:4px; white-space:pre-wrap; line-height:1.5; }
+
+  /* Canvas lateral */
+  .canvas-panel{ width:0; flex-shrink:0; overflow:hidden; display:flex; flex-direction:column; background: var(--surface-3); transition: width .18s ease; }
+  .canvas-panel.open{ width:380px; border-left:1px solid var(--border); }
+  .canvas-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:12px 14px; border-bottom:1px solid var(--border); }
+  .canvas-head input{ flex:1; min-width:0; background:none; border:none; color:var(--text); font-family:var(--display); font-weight:600; font-size:13.5px; }
+  .canvas-head input:focus{ outline:none; }
+  .canvas-toolbar{ display:flex; gap:6px; padding:8px 12px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .canvas-body{ flex:1; overflow-y:auto; padding:0; display:flex; flex-direction:column; }
+  .canvas-editor{ flex:1; width:100%; border:none; resize:none; background: var(--surface); color: var(--text); font-family: var(--mono); font-size:13px; line-height:1.65; padding:16px; box-sizing:border-box; }
+  .canvas-editor:focus{ outline:none; }
+  .canvas-doclist{ display:flex; flex-direction:column; gap:3px; padding:8px; border-bottom:1px solid var(--border); max-height:120px; overflow-y:auto; }
+  .canvas-doc-item{ display:flex; align-items:center; justify-content:space-between; gap:6px; padding:7px 9px; border-radius:8px; cursor:pointer; font-size:11.5px; color:var(--text-dim); }
+  .canvas-doc-item:hover{ background:var(--surface-2); }
+  .canvas-doc-item.active{ background:var(--user-bubble); color:var(--text); }
+  .canvas-doc-item button{ background:none; color:var(--text-dim); font-size:12px; flex-shrink:0; }
+  .canvas-doc-item button:hover{ color:var(--error); }
+  .canvas-empty{ padding:30px 16px; text-align:center; color:var(--text-dim); font-size:12.5px; line-height:1.6; }
+  .canvas-status{ font-size:10px; color:var(--text-dim); padding:7px 14px; border-top:1px solid var(--border); }
+
+  .conv-sidebar{ width:220px; flex-shrink:0; border-right:1px solid var(--border); background: var(--surface-3); display:flex; flex-direction:column; transition: transform .25s ease; }
+  .new-conv-btn{ margin:12px 14px 8px; background: var(--surface-2); border:1px solid var(--accent-dim); color: var(--accent); font-size:12.5px; font-weight:700; padding:10px 10px; border-radius:10px; transition: all .15s; }
+  .new-conv-btn:hover{ background: var(--accent); color:#062521; box-shadow: 0 4px 14px rgba(87,225,196,.25); }
+  .conv-list{ flex:1; overflow-y:auto; padding:4px 10px 12px; display:flex; flex-direction:column; gap:4px; }
+  .conv-item{ display:flex; align-items:center; justify-content:space-between; gap:6px; padding:10px 11px; border-radius:10px; cursor:pointer; transition: background .15s; }
+  .conv-item:hover{ background: var(--surface-2); }
+  .conv-item.active{ background: var(--user-bubble); }
+  .conv-item-main{ min-width:0; }
+  .conv-title{ font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px; }
+  .conv-date{ font-size:10px; color:var(--text-dim); margin-top:2px; }
+  .conv-delete{ background:none; color:var(--text-dim); font-size:16px; line-height:1; padding:2px 6px; border-radius:6px; flex-shrink:0; }
+  .conv-delete:hover{ color: var(--error); background: rgba(241,106,106,0.12); }
+  .conv-empty{ font-size:11.5px; color:var(--text-dim); padding:10px; line-height:1.5; }
+
+  .chat-main{ flex:1; min-width:0; display:flex; flex-direction:column; background: var(--surface); }
+  .chat-main-head{ display:none; }
+  .chat-log{ padding:22px 22px 10px; display:flex; flex-direction:column; gap:16px; flex:1; overflow-y:auto; scroll-behavior:smooth; }
+  .msg{ max-width:80%; display:flex; flex-direction:column; gap:6px; animation: msgIn .18s ease; }
+  @keyframes msgIn{ from{ opacity:0; transform: translateY(4px); } to{ opacity:1; transform:none; } }
+  .msg.user{ align-self:flex-end; align-items:flex-end; }
+  .msg.bot{ align-self:flex-start; align-items:flex-start; }
+  .bubble{ padding:12px 16px; border-radius:16px; font-size:14.5px; line-height:1.62; white-space:pre-wrap; }
+  .msg.user .bubble{ background: linear-gradient(135deg, var(--user-bubble), #2a3d6e); border-bottom-right-radius:4px; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+  .msg.bot .bubble{ background: var(--surface-2); border: 1px solid var(--border); border-bottom-left-radius:4px; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+  .msg.bot .bubble.error{ border:1px solid var(--error); color:#ffd9d9; background: rgba(241,106,106,.08); }
+  .msg.bot .bubble.thinking{ color: var(--text-dim); font-style:italic; }
+  .cypher-toggle{ font-size:11.5px; color: var(--accent-dim); background:none; padding:2px 4px; }
+  .cypher-toggle:hover{ color: var(--accent); }
+  .cypher-box{ display:none; background:#0B1424; border:1px solid var(--border); border-radius:10px; padding:11px 13px; font-family:var(--mono); font-size:12px; color:#B9E6DA; overflow-x:auto; max-width:100%; }
+  .cypher-box.show{ display:block; }
+
+  .composer{ border-top:1px solid var(--border); padding:14px 16px 16px; display:flex; gap:10px; align-items:flex-end; background: var(--surface); }
+  .composer-inner{ flex:1; display:flex; align-items:flex-end; gap:8px; background: var(--surface-2); border:1px solid var(--border); border-radius:18px; padding:6px 6px 6px 16px; transition: border-color .15s, box-shadow .15s; }
+  .composer-inner:focus-within{ border-color: var(--accent-dim); box-shadow: 0 0 0 3px rgba(87,225,196,.10); }
+  .composer textarea{
+    flex:1; resize:none; min-height:26px; max-height:200px; padding:9px 0; border:none; background:transparent;
+    color:var(--text); font-size:15px; font-family:inherit; outline:none; line-height:1.5;
+  }
+  .composer textarea::placeholder{ color: var(--text-dim); }
+  .send-btn{ background: linear-gradient(135deg, var(--accent), #3fc9ab); color:#062521; border-radius:14px; width:42px; height:42px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition: all .15s; box-shadow: 0 3px 10px rgba(87,225,196,.25); }
+  .send-btn:hover:not(:disabled){ transform: scale(1.05); }
+  .send-btn:disabled{ opacity:.35; cursor:not-allowed; box-shadow:none; }
+
+  .suggestions{ display:flex; flex-wrap:wrap; gap:8px; padding: 4px 18px 16px; }
+  .chip{ background: var(--surface-2); border:1px solid var(--border); color:var(--text-dim); font-size:12.5px; padding:8px 14px; border-radius:20px; transition: all .15s; }
+  .chip:hover{ color: var(--text); border-color: var(--accent-dim); background: var(--surface-3); transform: translateY(-1px); }
+
+  ::-webkit-scrollbar{ width:9px; height:9px; }
+  ::-webkit-scrollbar-thumb{ background: var(--border); border-radius:8px; }
+  ::-webkit-scrollbar-thumb:hover{ background: var(--accent-dim); }
+  ::-webkit-scrollbar-track{ background: transparent; }
+
+  /* ---- Chat toolbar (novas funcionalidades) ---- */
+  .chat-toolbar{ display:flex; flex-wrap:nowrap; overflow-x:auto; align-items:center; gap:6px; padding:10px 16px; border-top:1px solid var(--border); background: var(--surface-3); scrollbar-width: thin; }
+  .tb-btn{ background: var(--surface-2); border:1px solid var(--border); color:var(--text-dim); font-size:12.5px; padding:8px 11px; border-radius:9px; display:flex; align-items:center; gap:5px; white-space:nowrap; transition: all .15s; flex-shrink:0; }
+  .tb-btn:hover{ color:var(--text); border-color:var(--accent-dim); background: var(--surface); }
+  .tb-btn.recording{ background: var(--error); color:#fff; border-color:var(--error); animation: pulse 1.2s infinite; }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.55; } }
+  .tb-sep{ width:1px; align-self:stretch; background:var(--border); margin:0 2px; flex-shrink:0; }
+  .tb-dropdown{ position:relative; flex-shrink:0; }
+  .tb-dropdown-menu{ display:none; position:absolute; bottom:calc(100% + 6px); left:0; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:6px; min-width:160px; box-shadow:0 8px 24px rgba(0,0,0,.35); z-index:20; }
+  .tb-dropdown-menu.open{ display:block; }
+  .tb-dropdown-menu button{ display:block; width:100%; text-align:left; background:none; color:var(--text); font-size:12.5px; padding:8px 10px; border-radius:7px; }
+  .tb-dropdown-menu button:hover{ background: var(--surface-3); }
+
+  /* Ficheiros anexados */
+  .file-chips{ display:flex; flex-wrap:wrap; gap:7px; padding:0 14px 10px; }
+  .file-chip{ display:flex; align-items:center; gap:7px; background: var(--surface-2); border:1px solid var(--accent-dim); color:var(--accent); font-size:11.5px; padding:6px 10px; border-radius:20px; }
+  .file-chip button{ background:none; color:var(--text-dim); font-size:12px; }
+  .file-chip button:hover{ color:var(--error); }
+
+  /* Ações pós-resposta */
+  .post-actions{ display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; }
+  .post-chip{ background:none; border:1px solid var(--border); color:var(--text-dim); font-size:10.5px; padding:4px 9px; border-radius:14px; }
+  .post-chip:hover{ color:var(--accent); border-color:var(--accent-dim); }
+
+  /* Feedback (like/dislike) */
+  .feedback-row{ display:flex; align-items:center; gap:8px; margin-top:2px; }
+  .fb-btn{ background:none; color:var(--text-dim); font-size:13px; padding:3px 6px; border-radius:6px; }
+  .fb-btn:hover{ color:var(--text); background:var(--surface-2); }
+  .fb-btn.active-up{ color:var(--accent); }
+  .fb-btn.active-down{ color:var(--error); }
+  .fb-correction{ display:none; gap:6px; margin-top:6px; width:100%; }
+  .fb-correction.open{ display:flex; }
+  .fb-correction textarea{ flex:1; min-height:50px; resize:vertical; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:12px; padding:7px 9px; }
+  .fb-correction button{ background:var(--accent); color:#062521; font-size:11.5px; font-weight:600; padding:0 12px; border-radius:8px; }
+
+  /* Modal genérico (memória, estatísticas) */
+  .modal-overlay{ display:none; position:fixed; inset:0; background:rgba(5,9,18,0.65); backdrop-filter: blur(2px); z-index:100; align-items:center; justify-content:center; padding:20px; }
+  .modal-overlay.open{ display:flex; }
+  .modal-box{ background:var(--surface); border:1px solid var(--border); border-radius:16px; width:100%; max-width:480px; max-height:82vh; display:flex; flex-direction:column; overflow:hidden; }
+  .modal-head{ display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--border); }
+  .modal-head h3{ margin:0; font-size:15px; font-family:var(--display); }
+  .modal-close{ background:none; color:var(--text-dim); font-size:18px; }
+  .modal-close:hover{ color:var(--text); }
+  .modal-body{ padding:16px 18px; overflow-y:auto; font-size:13px; line-height:1.6; }
+  .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .stat-card{ background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px; }
+  .stat-card .num{ font-family:var(--display); font-size:20px; color:var(--accent); }
+  .stat-card .lbl{ font-size:11px; color:var(--text-dim); margin-top:2px; }
+  .mem-item{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; background:var(--surface-2); border:1px solid var(--border); border-radius:9px; padding:9px 11px; margin-bottom:7px; font-size:12.5px; }
+  .mem-item button{ background:none; color:var(--text-dim); flex-shrink:0; }
+  .mem-item button:hover{ color:var(--error); }
+  .mem-add-row{ display:flex; gap:7px; margin-top:10px; }
+  .mem-add-row input{ flex:1; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:12.5px; }
+  .mem-add-row button{ background:var(--accent); color:#062521; font-weight:600; font-size:12px; padding:0 14px; border-radius:8px; }
+  .mem-consent{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); margin-bottom:10px; }
+
+  /* Gráfico de análise de ficheiro */
+  .file-chart-wrap{ background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px; margin-top:6px; max-width:420px; }
+  .file-chart-wrap select{ background:var(--surface-3); border:1px solid var(--border); color:var(--text); font-size:11.5px; padding:5px 7px; border-radius:6px; margin-bottom:8px; }
+
+  @media (max-width: 980px){
+    .tabs{ display:flex; }
+    .main{ grid-template-columns: 1fr; }
+    .panel{ display:none; }
+    .panel.active{ display:flex; }
+  }
+  @media (min-width: 981px){
+    .panel{ display:flex !important; }
+  }
+  @media (max-width: 720px){
+    body{ padding: 14px 8px 24px; }
+    .header{ gap:10px; }
+    .brand p{ display:none; }
+    .settings-body{ grid-template-columns: 1fr; }
+    .msg{ max-width:92%; }
+    .graph-body{ flex-direction:column; }
+    .node-details, .graph-canvas-wrap{ width:100%; height:320px; }
+
+    /* Chat quase a ecrã inteiro, sem alturas fixas espremidas */
+    .chat-shell{ height: calc(100dvh - 158px); min-height:420px; }
+    .chat-log{ padding:16px 14px 8px; }
+    .chat-toolbar{ padding:8px 10px; }
+    .composer{ padding:10px 10px 12px; }
+    .suggestions{ padding: 4px 12px 12px; }
+
+    /* Sidebar de conversas/projetos passa a drawer deslizante */
+    .chat-main-head{ display:flex; align-items:center; padding:10px 12px; border-bottom:1px solid var(--border); background: var(--surface-3); }
+    .sidebar-toggle-btn{ display:flex; align-items:center; gap:7px; background: var(--surface-2); border:1px solid var(--border); color:var(--text); font-size:12.5px; font-weight:600; padding:8px 12px; border-radius:9px; }
+    .conv-sidebar{
+      position:absolute; left:0; top:0; bottom:0; width:82vw; max-width:300px; z-index:50;
+      transform: translateX(-105%); box-shadow: 10px 0 34px rgba(0,0,0,.45);
+    }
+    .conv-sidebar.open{ transform: translateX(0); }
+    .canvas-panel.open{ position:absolute; right:0; top:0; bottom:0; width:88vw; max-width:360px; z-index:50; box-shadow: -10px 0 34px rgba(0,0,0,.45); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="brand">
+      <svg viewBox="0 0 40 40" fill="none">
+        <circle cx="20" cy="8" r="4" fill="#57E1C4"/>
+        <circle cx="8" cy="28" r="4" fill="#57E1C4" opacity="0.75"/>
+        <circle cx="32" cy="28" r="4" fill="#57E1C4" opacity="0.55"/>
+        <line x1="20" y1="8" x2="8" y2="28" stroke="#57E1C4" stroke-width="1.4" opacity="0.5"/>
+        <line x1="20" y1="8" x2="32" y2="28" stroke="#57E1C4" stroke-width="1.4" opacity="0.5"/>
+        <line x1="8" y1="28" x2="32" y2="28" stroke="#57E1C4" stroke-width="1.4" opacity="0.3"/>
+      </svg>
+      <div>
+        <h1>FitBro <span class="brand-sep">·</span> Explorador do Grafo</h1>
+        <p>Visualiza o grafo de requisitos e conversa com ele — em linguagem natural</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="install-btn" id="installBtn" title="Instalar como app" hidden>⬇ Instalar app</button>
+      <div class="status">
+        <span class="dot" id="connDot"></span>
+        <span id="connLabel">Desligado</span>
+      </div>
+    </div>
+  </div>
+
+  <details class="settings" id="settingsPanel" open>
+    <summary>Ligação
+      <span class="chev">▶</span>
+    </summary>
+    <div class="settings-body">
+      <div class="field">
+        <label for="neo4jUri">URI do Neo4j Aura</label>
+        <input id="neo4jUri" type="text" placeholder="neo4j+s://xxxxxxxx.databases.neo4j.io">
+      </div>
+      <div class="field">
+        <label for="neo4jUser">Utilizador</label>
+        <input id="neo4jUser" type="text" placeholder="neo4j" value="neo4j">
+      </div>
+      <div class="field">
+        <label for="neo4jPass">Password</label>
+        <input id="neo4jPass" type="password" placeholder="password do Aura">
+      </div>
+      <div class="field">
+        <label for="apiKey">Groq API Key</label>
+        <input id="apiKey" type="password" placeholder="gsk_...">
+      </div>
+      <div class="field">
+        <label for="groqModel">Modelo Groq</label>
+        <input id="groqModel" type="text" placeholder="llama-3.3-70b-versatile" value="llama-3.3-70b-versatile">
+      </div>
+      <div class="field">
+        <label for="tavilyKey">Tavily API Key (pesquisa web, opcional)</label>
+        <input id="tavilyKey" type="password" placeholder="tvly-... (deixa vazio para desativar)">
+      </div>
+      <div class="field">
+        <label for="personalitySelect">Personalidade / Tom</label>
+        <select id="personalitySelect"></select>
+      </div>
+      <div class="settings-actions">
+        <button class="btn-primary" id="connectBtn">Ligar</button>
+        <span class="conn-msg" id="connMsg">Nada é guardado — introduz os dados sempre que abrires a página.</span>
+      </div>
+      <div class="hint full">
+        A chave é usada apenas no browser para chamar diretamente a API gratuita da Groq (Llama 3.3 70B), não é enviada a nenhum outro servidor. Obtém uma key grátis em <strong>console.groq.com/keys</strong> (sem cartão de crédito). Todas as consultas Cypher — do grafo visual e do chat — são só de leitura (MATCH/RETURN); nunca é escrito na base de dados. As tuas conversas com o chatbot ficam guardadas neste browser (localStorage), isoladas por projeto, e voltam a aparecer no menu lateral da próxima vez que abrires esta página — nunca são enviadas para lado nenhum. A Tavily key (opcional, grátis em <strong>tavily.com</strong>) ativa pesquisa na internet; sem ela, o chatbot responde só com o que sabe e com o grafo. O agente/ferramenta certa (grafo, pesquisa, calculadora, meteorologia ou resposta geral) é escolhido automaticamente pelo router para cada pergunta — não precisas de selecionar nada.
+      </div>
+    </div>
+  </details>
+
+  <div class="tabs" id="tabs">
+    <button class="tab-btn active" data-tab="graph">Grafo</button>
+    <button class="tab-btn" data-tab="chat">Chat</button>
+  </div>
+
+  <div class="main">
+
+    <!-- ============ GRAPH PANEL ============ -->
+    <section class="panel active" id="graphPanel">
+      <div class="panel-toolbar">
+        <div class="presets" id="presets"></div>
+      </div>
+      <div class="graph-controls">
+        <div class="search-group">
+          <input type="text" id="graphSearch" placeholder="Procurar nó por nome ou id (ex.: RF-04, gestao_membros)...">
+          <button class="icon-btn" id="searchBtn" title="Procurar">🔍</button>
+        </div>
+        <div class="limit-group">
+          <label for="limitInput">Limite</label>
+          <input type="number" id="limitInput" value="120" min="20" max="500" step="10">
+        </div>
+        <div class="graph-actions">
+          <button class="icon-btn" id="zoomInBtn" title="Aproximar">＋</button>
+          <button class="icon-btn" id="zoomOutBtn" title="Afastar">－</button>
+          <button class="icon-btn" id="fitBtn" title="Ajustar à janela">⤢ Ajustar</button>
+          <button class="icon-btn" id="physicsBtn" title="Ligar/desligar física">Física: On</button>
+          <button class="icon-btn" id="fullscreenBtn" title="Ecrã inteiro">⛶</button>
+          <button class="icon-btn" id="exportBtn" title="Exportar como PNG">⬇ PNG</button>
+        </div>
+        <div class="graph-stats" id="graphStats"></div>
+      </div>
+      <div class="graph-body">
+        <div class="graph-canvas-wrap" id="graphCanvasWrap">
+          <div id="graphCanvas"></div>
+          <div class="legend" id="legend"></div>
+          <div class="graph-empty" id="graphEmpty">Liga-te ao Neo4j Aura para visualizar o grafo.</div>
+        </div>
+        <div class="node-details" id="nodeDetails">
+          <div class="node-details-empty">Clica num nó ou relação para ver os detalhes. Duplo-clique num nó expande os seus vizinhos diretamente no grafo.</div>
+        </div>
+      </div>
+      <div class="custom-cypher">
+        <textarea id="customCypher" placeholder="Ou escreve a tua própria consulta Cypher de leitura..."></textarea>
+        <button id="runCustomCypher">Executar</button>
+      </div>
+      <div class="cypher-hint">Dica: devolve nó, relação e nó (ex.: <code>RETURN n, r, m</code>) para a melhor visualização · duplo-clique num nó para expandir vizinhos · passa o rato para realçar ligações · clica na legenda para mostrar/ocultar tipos de nó.</div>
+    </section>
+
+    <!-- ============ CHAT PANEL ============ -->
+    <section class="panel" id="chatPanel">
+      <div class="chat-shell" id="chatShell">
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+        <aside class="conv-sidebar" id="convSidebar">
+          <div class="project-bar">
+            <div class="project-row">
+              <select class="project-select" id="projectSelect" title="Projeto ativo"></select>
+              <button class="project-icon-btn" id="newProjectBtn" title="Novo projeto">＋</button>
+              <button class="project-icon-btn" id="renameProjectBtn" title="Renomear projeto">✎</button>
+              <button class="project-icon-btn" id="deleteProjectBtn" title="Eliminar projeto">🗑</button>
+            </div>
+            <div class="project-hint">Cada projeto tem conversas, memória, ficheiros e documentos (canvas) isolados.</div>
+          </div>
+          <button class="new-conv-btn" id="newConvBtn">+ Nova conversa</button>
+          <div class="conv-list" id="convList"></div>
+        </aside>
+        <div class="chat-main">
+          <div class="chat-main-head">
+            <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Conversas e projetos">☰ <span id="activeConvLabel">Conversas</span></button>
+          </div>
+          <div class="chat-log" id="chatLog"></div>
+          <div class="stage-track" id="stageTrack"></div>
+          <div class="suggestions" id="suggestions">
+            <button class="chip" data-q="Quantos requisitos funcionais 'Must' existem por módulo?">Requisitos "Must" por módulo</button>
+            <button class="chip" data-q="Que requisitos envolvem o Personal Trainer?">Requisitos do Personal Trainer</button>
+            <button class="chip" data-q="Que entidades de dados são usadas pelo módulo de gestão financeira?">Dados da gestão financeira</button>
+            <button class="chip" data-q="Lista os requisitos não funcionais de segurança.">RNFs de segurança</button>
+            <button class="chip" data-q="Cria um plano: analisa os RNFs de segurança, pesquisa boas práticas atuais e resume tudo num documento.">Pedido complexo (ativa o planeador)</button>
+          </div>
+          <div class="file-chips" id="fileChips"></div>
+          <div class="chat-toolbar">
+            <button class="tb-btn" id="attachBtn" title="Anexar ficheiro (PDF, Word, Excel, CSV)">📎 Anexar</button>
+            <button class="tb-btn" id="micBtn" title="Ditar pergunta por voz">🎤 Voz</button>
+            <div class="tb-sep"></div>
+            <div class="tb-dropdown">
+              <button class="tb-btn" id="exportBtnChat" title="Exportar conversa">⬇ Exportar</button>
+              <div class="tb-dropdown-menu" id="exportMenu">
+                <button data-fmt="pdf">📄 Exportar como PDF</button>
+                <button data-fmt="pptx">📊 Exportar como PPTX</button>
+                <button data-fmt="xlsx">📈 Exportar como Excel</button>
+              </div>
+            </div>
+            <div class="tb-sep"></div>
+            <button class="tb-btn" id="memBtn" title="Memória de longo prazo">🧠 Memória</button>
+            <button class="tb-btn" id="statsBtn" title="Estatísticas de uso">📊 Estatísticas</button>
+            <button class="tb-btn" id="canvasBtn" title="Abrir/fechar o canvas de documentos">📝 Canvas</button>
+            <div class="tb-sep"></div>
+            <button class="tb-btn" id="mailBtn" title="Rascunho de email com o resumo desta conversa">✉️ Email</button>
+            <button class="tb-btn" id="calBtn" title="Criar evento no Google Calendar">📅 Evento</button>
+            <button class="tb-btn" id="reminderBtn" title="Lembrete local (enquanto este separador estiver aberto)">⏰ Lembrete</button>
+          </div>
+          <input type="file" id="fileInput" multiple accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.md" style="display:none">
+          <div class="composer">
+            <div class="composer-inner">
+              <textarea id="input" placeholder="Escreve a tua pergunta sobre o FitBro..." rows="1"></textarea>
+            </div>
+            <button class="send-btn" id="sendBtn" title="Enviar" disabled>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 11.5L21 3L13.2 21L10.8 13.2L3 11.5Z" stroke="#062521" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+        <aside class="canvas-panel" id="canvasPanel">
+          <div class="canvas-head">
+            <input type="text" id="canvasTitleInput" placeholder="Título do documento" value="Documento sem título">
+            <button class="project-icon-btn" id="canvasCloseBtn" title="Fechar canvas">✕</button>
+          </div>
+          <div class="canvas-doclist" id="canvasDocList"></div>
+          <div class="canvas-toolbar">
+            <button class="tb-btn" id="canvasNewBtn" title="Novo documento">＋ Novo</button>
+            <button class="tb-btn" id="canvasExportMdBtn" title="Exportar como Markdown">⬇ .md</button>
+            <button class="tb-btn" id="canvasExportTxtBtn" title="Exportar como texto">⬇ .txt</button>
+            <button class="tb-btn" id="canvasDeleteBtn" title="Eliminar documento atual">🗑 Eliminar</button>
+          </div>
+          <div class="canvas-body">
+            <textarea class="canvas-editor" id="canvasEditor" placeholder="Escreve ou envia uma resposta do chat para aqui («📝 Enviar para Canvas» em cada resposta)..."></textarea>
+          </div>
+          <div class="canvas-status" id="canvasStatus">Guardado automaticamente neste projeto.</div>
+        </aside>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ============ MODAL: MEMÓRIA DE LONGO PRAZO ============ -->
+  <div class="modal-overlay" id="memModal">
+    <div class="modal-box">
+      <div class="modal-head"><h3>🧠 Memória de longo prazo</h3><button class="modal-close" id="memModalClose">✕</button></div>
+      <div class="modal-body">
+        <label class="mem-consent"><input type="checkbox" id="memConsent"> Autorizo guardar estas notas neste browser e usá-las para personalizar as respostas em qualquer conversa.</label>
+        <div id="memList"></div>
+        <div class="mem-add-row">
+          <input type="text" id="memInput" placeholder="Ex.: prefiro respostas curtas e diretas">
+          <button id="memAddBtn">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: ESTATÍSTICAS DE USO ============ -->
+  <div class="modal-overlay" id="statsModal">
+    <div class="modal-box">
+      <div class="modal-head"><h3>📊 Estatísticas de uso</h3><button class="modal-close" id="statsModalClose">✕</button></div>
+      <div class="modal-body">
+        <div class="stat-grid" id="statGrid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// =====================================================================
+// FitBro · Explorador do Grafo (vis-network) + Chatbot Neo4j + Groq
+// =====================================================================
+
+const state = {
+  driver: null, connected: false, apiKey: null, model: 'llama-3.3-70b-versatile', busy: false, history: [],
+  tavilyKey: null, agent: 'geral', personality: 'consultor',
+  ragFiles: [], // { name, chunks: [{text}] }
+  usage: { messages: 0, tokensEst: 0, responseTimes: [], up: 0, down: 0 },
+  projects: [], currentProjectId: null,
+  canvasOpen: false, canvasDocs: [], currentCanvasDocId: null
+};
+
+// =====================================================================
+// -------- Projetos: memória e documentos isolados por projeto --------
+// =====================================================================
+const PROJECTS_KEY = 'fitbro_projects_v1';
+const CURRENT_PROJECT_KEY = 'fitbro_current_project_v1';
+
+function scopedKey(base) {
+  return base + ':' + (state.currentProjectId || 'default');
+}
+
+function loadProjects() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PROJECTS_KEY) || '[]');
+    if (Array.isArray(raw) && raw.length) return raw;
+  } catch (err) {}
+  return [];
+}
+function persistProjects() {
+  try { localStorage.setItem(PROJECTS_KEY, JSON.stringify(state.projects)); } catch (err) {}
+}
+function makeProject(name) {
+  return { id: 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), name: name || 'Novo projeto', createdAt: Date.now() };
+}
+function ensureDefaultProject() {
+  state.projects = loadProjects();
+  if (!state.projects.length) {
+    const p = makeProject('FitBro');
+    state.projects = [p];
+    persistProjects();
+  }
+  const savedCurrent = localStorage.getItem(CURRENT_PROJECT_KEY);
+  const found = state.projects.find(p => p.id === savedCurrent);
+  state.currentProjectId = found ? found.id : state.projects[0].id;
+}
+function renderProjectSelector() {
+  const sel = document.getElementById('projectSelect');
+  sel.innerHTML = '';
+  state.projects.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id; opt.textContent = p.name;
+    if (p.id === state.currentProjectId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+function loadProjectContext() {
+  // Recarrega tudo o que é isolado por projeto: conversas, memória, correções, ficheiros e canvas.
+  state.conversations = loadConversationsFromStorage();
+  state.currentConversationId = null;
+  if (state.conversations.length) {
+    const mostRecent = [...state.conversations].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+    selectConversation(mostRecent.id);
+  } else {
+    chatLog.innerHTML = '';
+    renderConversationList();
+    document.getElementById('suggestions').style.display = 'flex';
+  }
+  state.ragFiles = [];
+  renderFileChips();
+  state.canvasDocs = loadCanvasDocs();
+  state.currentCanvasDocId = state.canvasDocs.length ? state.canvasDocs[0].id : null;
+  renderCanvasDocList();
+  loadCanvasIntoEditor();
+}
+function switchProject(id) {
+  if (!id || id === state.currentProjectId) return;
+  state.currentProjectId = id;
+  localStorage.setItem(CURRENT_PROJECT_KEY, id);
+  renderProjectSelector();
+  loadProjectContext();
+}
+document.getElementById('projectSelect').addEventListener('change', (e) => switchProject(e.target.value));
+document.getElementById('newProjectBtn').addEventListener('click', () => {
+  const name = prompt('Nome do novo projeto:', 'Novo projeto');
+  if (!name) return;
+  const p = makeProject(name.trim());
+  state.projects.push(p);
+  persistProjects();
+  renderProjectSelector();
+  switchProject(p.id);
+});
+document.getElementById('renameProjectBtn').addEventListener('click', () => {
+  const proj = state.projects.find(p => p.id === state.currentProjectId);
+  if (!proj) return;
+  const name = prompt('Novo nome do projeto:', proj.name);
+  if (!name || !name.trim()) return;
+  proj.name = name.trim();
+  persistProjects();
+  renderProjectSelector();
+});
+document.getElementById('deleteProjectBtn').addEventListener('click', () => {
+  if (state.projects.length <= 1) { alert('Tem de existir sempre pelo menos um projeto.'); return; }
+  const proj = state.projects.find(p => p.id === state.currentProjectId);
+  if (!proj) return;
+  if (!confirm('Eliminar o projeto "' + proj.name + '" e todos os seus dados (conversas, memória, canvas)? Esta ação não pode ser desfeita.')) return;
+  ['fitbro_chat_conversations_v1', 'fitbro_long_term_memory_v1', 'fitbro_corrections_v1', 'fitbro_usage_v1', 'fitbro_canvas_docs_v1'].forEach(base => {
+    try { localStorage.removeItem(base + ':' + proj.id); } catch (err) {}
+  });
+  state.projects = state.projects.filter(p => p.id !== proj.id);
+  persistProjects();
+  switchProject(state.projects[0].id);
+  renderProjectSelector();
+});
+
+// -------- Agentes especializados (personas) --------
+const AGENT_PERSONAS = {
+  geral:      { label: 'Consultor RE (FitBro)', text: 'És um assistente consultor especialista em engenharia de requisitos, gestão de produto e arquitetura de software, focado no projeto FitBro.' },
+  pesquisa:   { label: 'Pesquisa', text: 'És um assistente de pesquisa: prioriza factos verificáveis, contrasta fontes quando as tiveres, e sinaliza claramente incerteza quando não tiveres a certeza.' },
+  financeiro: { label: 'Financeiro', text: 'És um assistente financeiro: ajudas com orçamentos, modelos de preços, faturação e análise de custos, sempre com raciocínio numérico explícito.' },
+  vendas:     { label: 'Vendas', text: 'És um assistente de vendas: ajudas a redigir propostas, argumentos de venda e follow-ups persuasivos mas honestos, focados no valor para o cliente.' },
+  programacao:{ label: 'Programação', text: 'És um assistente de engenharia de software: respondes com código claro, explicas trade-offs técnicos e apontas riscos de segurança/performance quando relevante.' },
+  rh:         { label: 'Recursos Humanos', text: 'És um assistente de RH: ajudas com descrições de função, processos de onboarding, políticas internas e comunicação interna sensível.' },
+  suporte:    { label: 'Suporte ao Cliente', text: 'És um assistente de suporte ao cliente: respondes com empatia, passos claros de resolução, e escalas para um humano quando o problema o exigir.' }
+};
+
+// -------- Personalidade / tom adaptativo --------
+const PERSONALITY_STYLES = {
+  formal:    { label: 'Formal', text: 'Escreve num tom formal e institucional, cuidando da gramática e evitando coloquialismos.' },
+  casual:    { label: 'Casual', text: 'Escreve num tom casual e próximo, como quem fala com um colega de confiança.' },
+  tecnico:   { label: 'Técnico', text: 'Escreve num tom técnico e preciso, usando terminologia correta e sendo direto, sem rodeios.' },
+  professor: { label: 'Professor', text: 'Escreve como um professor paciente: explica o "porquê", usa analogias simples e verifica se o essencial ficou claro.' },
+  consultor: { label: 'Consultor', text: 'Escreve como um consultor sénior: direto, orientado a decisões e a trade-offs, com recomendações claras.' },
+  programador:{ label: 'Programador', text: 'Escreve como um programador experiente: conciso, com exemplos de código quando útil, sem floreados.' }
+};
+
+function populateSelect(id, dict, current) {
+  const el = document.getElementById(id);
+  el.innerHTML = '';
+  Object.entries(dict).forEach(([key, v]) => {
+    const opt = document.createElement('option');
+    opt.value = key; opt.textContent = v.label;
+    if (key === current) opt.selected = true;
+    el.appendChild(opt);
+  });
+}
+
+// -------- Contexto de esquema do grafo (dado ao Llama para gerar Cypher) --------
+const SCHEMA_CONTEXT = `
+Grafo "FitBro" — nós e relações disponíveis:
+
+NÓS:
+- (:Documento {id, titulo, versao, data, produto, descricao})
+- (:Modulo {id, nome})  -- ex.: 'autenticacao', 'dashboard_admin', 'gestao_membros', 'gestao_financeira', 'agenda_reservas', 'comunicacao', 'treino_nutricao', 'relatorios', 'seguranca_auditoria'
+- (:Ator {id, nome, canal, descricao})  -- ex.: 'gestor', 'pt', 'atleta', 'admin_fitbro', 'sistema'
+- (:RequisitoFuncional {id, descricao})  -- ids tipo 'RF-01'..'RF-36'
+- (:RequisitoNaoFuncional {id, descricao})  -- ids tipo 'RNF-01'..'RNF-08'
+- (:CategoriaRNF {nome})  -- ex.: 'Desempenho', 'Segurança', 'Usabilidade', 'Disponibilidade', 'Escalabilidade', 'Compatibilidade', 'Manutenibilidade', 'Auditoria'
+- (:Prioridade {nome})  -- 'Must', 'Should', 'Could', 'Wont'
+- (:EntidadeDados {nome, area, gerida_framework})  -- tabelas do modelo relacional, ex.: 'USERS', 'SESSOES', 'PAGAMENTOS', etc.
+- (:EstadoDesenvolvimento {nome, cor, ordem})  -- estado REAL de cada requisito: 'Desenvolvido' (verde #00A933), 'Em desenvolvimento' (amarelo #FFFF00), 'Por desenvolver' (laranja #FF8000). Todos os RNF ficam "Por desenvolver" por omissão (sem cor no documento fonte).
+- (:PlanoSubscricao {id, nome, publico_alvo, preco_mensal, moeda, tipo})  -- planos comerciais: 'Gratuito', 'Pro', 'Módulo Extra', 'Personalizado'
+- (:Funcionalidade {nome})  -- funcionalidades comerciais incluídas nos planos de subscrição, algumas correspondem a requisitos existentes, outras são ideias novas sem requisito ainda
+
+RELAÇÕES:
+- (Documento)-[:DEFINE_MODULO]->(Modulo)
+- (Documento)-[:ESPECIFICA]->(RequisitoFuncional | RequisitoNaoFuncional | PlanoSubscricao)
+- (RequisitoFuncional)-[:PERTENCE_A]->(Modulo)
+- (RequisitoFuncional)-[:TEM_PRIORIDADE]->(Prioridade)
+- (RequisitoFuncional)-[:ENVOLVE_ATOR]->(Ator)
+- (RequisitoNaoFuncional)-[:DA_CATEGORIA]->(CategoriaRNF)
+- (RequisitoNaoFuncional)-[:TEM_PRIORIDADE]->(Prioridade)
+- (Modulo)-[:UTILIZA_ENTIDADE]->(EntidadeDados)
+- (EntidadeDados)-[:REFERENCIA {campo}]->(EntidadeDados)   -- chaves estrangeiras entre tabelas
+- (RequisitoFuncional | RequisitoNaoFuncional)-[:TEM_ESTADO]->(EstadoDesenvolvimento)  -- estado/progresso real de cada requisito; usa isto para perguntas sobre progresso, o que já está feito, o que falta, % concluído, etc.
+- (PlanoSubscricao)-[:INCLUI {limite?}]->(Funcionalidade)
+- (PlanoSubscricao)-[:ADICIONA_A]->(PlanoSubscricao)  -- módulo extra que se soma a um plano base
+- (PlanoSubscricao)-[:DESTINADO_A]->(Ator)
+- (Funcionalidade)-[:IMPLEMENTADO_POR]->(RequisitoFuncional)  -- só existe quando a funcionalidade comercial já tem requisito correspondente no SRS; se não existir, é uma ideia nova ainda sem requisito
+
+Notas importantes para gerar Cypher:
+- Perguntas sobre "estado", "progresso", "desenvolvido", "por desenvolver", "em desenvolvimento", "% concluído", "o que falta" → USA sempre a relação TEM_ESTADO para RequisitoFuncional/RequisitoNaoFuncional. Nunca assumas o estado sem consultar o grafo.
+- Perguntas sobre planos, preços, subscrições, o que cada plano inclui → usa PlanoSubscricao, INCLUI, Funcionalidade.
+- Perguntas sobre que ideias/funcionalidades comerciais ainda não têm requisito formal ("gaps") → procura (:Funcionalidade) que NÃO tenha relação [:IMPLEMENTADO_POR] a sair para nenhum RequisitoFuncional.
+`.trim();
+
+function buildSystemRoute() {
+  const agentList = Object.entries(AGENT_PERSONAS).map(([k, v]) => `"${k}" (${v.label})`).join(', ');
+  return `És o router automático de um chatbot híbrido sobre o projeto FitBro (software de gestão para ginásios, estúdios e personal trainers) e sobre o respetivo grafo de requisitos em Neo4j. O utilizador NUNCA escolhe manualmente a ferramenta ou o agente — decides tu sempre, sozinho, com base na pergunta.
+
+${SCHEMA_CONTEXT}
+
+Para cada pergunta do utilizador, decide o "tipo":
+- "plano": a pergunta é um pedido COMPLEXO com vários passos distintos e independentes que precisam de ferramentas diferentes (ex.: "consulta o grafo E pesquisa na internet E resume tudo", pedidos com várias perguntas encadeadas, tarefas com "primeiro... depois... por fim..."). Decompõe em 2 a 5 subtarefas curtas e autónomas no campo "subtarefas" (cada uma deve poder ser respondida isoladamente por um dos outros tipos). Deixa "cypher" vazio.
+- "grafo": a pergunta pede dados concretos que existem no grafo acima. Gera também a consulta Cypher.
+- "pesquisa": a pergunta precisa de informação atual da internet (notícias, factos recentes, algo fora do grafo e do teu conhecimento). Deixa o campo cypher vazio.
+- "geral": opinião, sugestão, dúvida conceptual, boas práticas, brainstorming, ou perguntas sobre ficheiros anexados. Deixa o campo cypher vazio.
+
+Escolhe também o "agente" (persona) mais adequado ao ASSUNTO da pergunta, entre: ${agentList}. Por omissão usa "geral".
+
+Regras obrigatórias para tipo="grafo":
+1. Gera APENAS consultas de leitura (MATCH, OPTIONAL MATCH, WHERE, RETURN, ORDER BY, WITH, UNWIND, LIMIT, count, collect). NUNCA CREATE, MERGE, SET, DELETE, REMOVE, DROP ou DETACH.
+2. Usa sempre os labels e nomes de propriedades exatamente como definidos acima.
+3. Limita resultados grandes com LIMIT 50 quando fizer sentido.
+
+Responde SOMENTE com um objeto JSON válido, sem markdown, sem texto antes ou depois, no formato exato:
+{"tipo": "grafo" | "pesquisa" | "geral" | "plano", "cypher": "<consulta cypher ou string vazia>", "explicacao": "<uma frase curta em português>", "agente": "<uma das chaves de agente>", "subtarefas": ["<subtarefa 1>", "<subtarefa 2>"]}
+Quando tipo != "plano", deixa "subtarefas" como uma lista vazia.`;
+}
+
+function buildSystemGeneral(agentKey) {
+  const persona = AGENT_PERSONAS[agentKey || state.agent] || AGENT_PERSONAS.geral;
+  const tone = PERSONALITY_STYLES[state.personality] || PERSONALITY_STYLES.consultor;
+  let prompt = `${persona.text}
+
+Contexto do projeto: FitBro é um software de gestão para ginásios, estúdios e personal trainers, com Backoffice web e App móvel, cujos requisitos estão modelados num grafo Neo4j (módulos, requisitos funcionais/não funcionais, atores, entidades de dados).
+
+${tone.text}
+
+Dá sugestões concretas, opiniões fundamentadas, exemplos e boas práticas quando fizer sentido. Não inventes números ou dados concretos do grafo que não te tenham sido fornecidos — sugere reformular para consultar o grafo diretamente nesse caso.`;
+
+  const mem = getLongTermMemoryText();
+  if (mem) prompt += `\n\nMemória de longo prazo sobre este utilizador (respeita estas preferências):\n${mem}`;
+
+  const corrections = getRelevantCorrections();
+  if (corrections) prompt += `\n\nCorreções anteriores dadas pelo utilizador a respeitar (aprendizagem leve):\n${corrections}`;
+
+  return prompt;
+}
+
+function buildSystemAnswer() {
+  return `És um assistente que explica, em português de forma natural, clara e concisa, o resultado de uma consulta ao grafo de requisitos do sistema FitBro.
+Recebes a pergunta original do utilizador, a consulta Cypher usada, e os resultados (em JSON).
+Regras:
+- Responde diretamente à pergunta, com base apenas nos resultados fornecidos.
+- Se os resultados estiverem vazios, diz claramente que não foram encontrados dados para essa pergunta.
+- Usa listas curtas quando o resultado tiver vários itens.
+- Não inventes informação que não esteja nos resultados.
+- Não repitas a consulta Cypher na resposta.`;
+}
+
+function buildSystemSearchAnswer() {
+  return `És um assistente que responde em português com base em resultados de pesquisa na internet.
+Recebes a pergunta do utilizador e uma lista de resultados (título, url, excerto).
+Regras: sintetiza a resposta de forma direta e concisa; no fim, lista as fontes usadas como "Fontes:" seguido de uma lista de URLs; se os resultados não responderem à pergunta, diz isso claramente.`;
+}
+
+// -------- Utilitários de UI (chat) --------
+const chatLog = document.getElementById('chatLog');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const connDot = document.getElementById('connDot');
+const connLabel = document.getElementById('connLabel');
+const connMsg = document.getElementById('connMsg');
+const settingsPanel = document.getElementById('settingsPanel');
+
+function addMessage(role, text, cypher, opts) {
+  opts = opts || {};
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + role;
+
+  if (role === 'bot' && opts.badge) {
+    const badge = document.createElement('div');
+    badge.className = 'route-badge';
+    badge.textContent = opts.badge;
+    wrap.appendChild(badge);
+  }
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+  wrap.appendChild(bubble);
+
+  if (cypher) {
+    const toggle = document.createElement('button');
+    toggle.className = 'cypher-toggle';
+    toggle.textContent = 'ver consulta Cypher';
+    const box = document.createElement('div');
+    box.className = 'cypher-box';
+    box.textContent = cypher;
+    toggle.onclick = () => {
+      box.classList.toggle('show');
+      toggle.textContent = box.classList.contains('show') ? 'ocultar consulta Cypher' : 'ver consulta Cypher';
+    };
+    wrap.appendChild(toggle);
+    wrap.appendChild(box);
+  }
+
+  if (role === 'bot' && !opts.minimal) {
+    wrap.appendChild(buildFeedbackRow(text, opts.question));
+    wrap.appendChild(buildPostActionsRow(text, opts.question));
+  }
+
+  chatLog.appendChild(wrap);
+  chatLog.scrollTop = chatLog.scrollHeight;
+  return bubble;
+}
+
+// -------- 👍/👎 feedback + correção (aprendizagem leve) --------
+function buildFeedbackRow(answerText, questionText) {
+  const row = document.createElement('div');
+  row.className = 'feedback-row';
+  const up = document.createElement('button'); up.className = 'fb-btn'; up.textContent = '👍';
+  const down = document.createElement('button'); down.className = 'fb-btn'; down.textContent = '👎';
+  const speak = document.createElement('button'); speak.className = 'fb-btn'; speak.textContent = '🔊';
+  speak.title = 'Ouvir esta resposta';
+  speak.addEventListener('click', () => speakText(answerText));
+  row.appendChild(up); row.appendChild(down); row.appendChild(speak);
+
+  const correctionBox = document.createElement('div');
+  correctionBox.className = 'fb-correction';
+  const ta = document.createElement('textarea');
+  ta.placeholder = 'Como devia ter respondido? (fica guardado e é usado para melhorar respostas futuras)';
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'Guardar correção';
+  correctionBox.appendChild(ta); correctionBox.appendChild(saveBtn);
+
+  up.addEventListener('click', () => {
+    up.classList.add('active-up'); down.classList.remove('active-down');
+    correctionBox.classList.remove('open');
+    state.usage.up++; saveUsage();
+  });
+  down.addEventListener('click', () => {
+    down.classList.add('active-down'); up.classList.remove('active-up');
+    correctionBox.classList.toggle('open');
+    state.usage.down++; saveUsage();
+  });
+  saveBtn.addEventListener('click', () => {
+    if (!ta.value.trim()) return;
+    saveCorrection(questionText || '', answerText, ta.value.trim());
+    correctionBox.classList.remove('open');
+    ta.value = '';
+  });
+
+  const container = document.createElement('div');
+  container.appendChild(row);
+  container.appendChild(correctionBox);
+  return container;
+}
+
+// -------- Sugestões pós-resposta --------
+function buildPostActionsRow(answerText, questionText) {
+  const row = document.createElement('div');
+  row.className = 'post-actions';
+  const actions = [
+    { label: '🌐 Traduzir (EN)', fn: () => quickTranslate(answerText, row) },
+    { label: '📝 Resumir', fn: () => quickSummarize(answerText, row) },
+    { label: '📄 Criar PDF', fn: () => exportSingleExchangeToPdf(questionText, answerText) },
+    { label: '📊 Apresentação', fn: () => exportSingleExchangeToPptx(questionText, answerText) },
+    { label: '📝 Enviar para Canvas', fn: () => sendTextToCanvas(answerText, questionText ? questionText.slice(0, 60) : undefined) }
+  ];
+  actions.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = 'post-chip';
+    btn.textContent = a.label;
+    btn.addEventListener('click', a.fn);
+    row.appendChild(btn);
+  });
+  return row;
+}
+
+async function quickTranslate(text, row) {
+  const bubble = addMessage('bot', 'A traduzir...', null, { minimal: true });
+  try {
+    const translated = await callGroq('Traduz o texto seguinte para inglês. Responde apenas com a tradução, sem comentários.', text, 600);
+    bubble.textContent = translated;
+  } catch (err) { bubble.textContent = 'Não consegui traduzir: ' + err.message; bubble.classList.add('error'); }
+}
+async function quickSummarize(text, row) {
+  const bubble = addMessage('bot', 'A resumir...', null, { minimal: true });
+  try {
+    const summary = await callGroq('Resume o texto seguinte em português em no máximo 3 frases curtas. Responde apenas com o resumo.', text, 300);
+    bubble.textContent = summary;
+  } catch (err) { bubble.textContent = 'Não consegui resumir: ' + err.message; bubble.classList.add('error'); }
+}
+
+function setBusy(b) {
+  state.busy = b;
+  sendBtn.disabled = b || !state.connected;
+  input.disabled = b;
+  if (!b) hideStages();
+}
+
+// =====================================================================
+// STAGE TRACK · indicadores de progresso e etapas de execução
+// =====================================================================
+const STAGE_TRACK_EL = document.getElementById('stageTrack');
+let currentStages = [];
+function showStages(stageDefs) {
+  currentStages = stageDefs.map(s => ({ key: s.key, label: s.label, status: 'pending' }));
+  renderStages();
+  STAGE_TRACK_EL.classList.add('show');
+}
+function setStageStatus(key, status) {
+  const s = currentStages.find(s => s.key === key);
+  if (s) s.status = status;
+  renderStages();
+}
+function renderStages() {
+  STAGE_TRACK_EL.innerHTML = '';
+  currentStages.forEach((s, i) => {
+    if (i > 0) {
+      const arrow = document.createElement('span');
+      arrow.className = 'stage-arrow';
+      arrow.textContent = '→';
+      STAGE_TRACK_EL.appendChild(arrow);
+    }
+    const chip = document.createElement('span');
+    chip.className = 'stage-chip' + (s.status === 'active' ? ' active' : '') + (s.status === 'done' ? ' done' : '');
+    const dot = document.createElement('span'); dot.className = 'dot';
+    const label = document.createElement('span');
+    label.textContent = (s.status === 'done' ? '✓ ' : '') + s.label;
+    chip.appendChild(dot); chip.appendChild(label);
+    STAGE_TRACK_EL.appendChild(chip);
+  });
+}
+function hideStages() {
+  STAGE_TRACK_EL.classList.remove('show');
+  STAGE_TRACK_EL.innerHTML = '';
+  currentStages = [];
+}
+
+function setConnected(ok, message) {
+  state.connected = ok;
+  connDot.classList.toggle('on', ok);
+  connDot.classList.toggle('err', !ok && !!message);
+  connLabel.textContent = ok ? 'Ligado ao Neo4j Aura' : 'Desligado';
+  connMsg.textContent = message || 'Nada é guardado — introduz os dados sempre que abrires a página.';
+  connMsg.className = 'conn-msg' + (ok ? ' ok' : (message ? ' err' : ''));
+  sendBtn.disabled = !ok;
+  if (ok) settingsPanel.removeAttribute('open');
+}
+
+// -------- Ligação ao Neo4j Aura --------
+document.getElementById('connectBtn').addEventListener('click', async () => {
+  const uri = document.getElementById('neo4jUri').value.trim();
+  const user = document.getElementById('neo4jUser').value.trim();
+  const pass = document.getElementById('neo4jPass').value;
+  const key = document.getElementById('apiKey').value.trim();
+  const model = document.getElementById('groqModel').value.trim() || 'llama-3.3-70b-versatile';
+  const tavily = document.getElementById('tavilyKey').value.trim();
+
+  if (!uri || !user || !pass) { setConnected(false, 'Preenche URI, utilizador e password.'); return; }
+  if (!key) { setConnected(false, 'Falta a Groq API key.'); return; }
+
+  connMsg.textContent = 'A ligar...';
+  connMsg.className = 'conn-msg';
+  try {
+    if (state.driver) await state.driver.close();
+    const driver = neo4j.driver(uri, neo4j.auth.basic(user, pass));
+    await driver.verifyConnectivity();
+    state.driver = driver;
+    state.apiKey = key;
+    state.model = model;
+    state.tavilyKey = tavily || null;
+    state.personality = document.getElementById('personalitySelect').value;
+    savePrefs();
+    setConnected(true);
+    addMessage('bot', 'Ligado ao teu grafo FitBro no Neo4j Aura. Podes explorar o grafo visualmente no painel ao lado, perguntar-me dados concretos, pedir sugestões, anexar ficheiros para eu analisar, ou usar as ferramentas na barra por cima da caixa de texto (voz, memória, exportar, email, calendário, lembretes, canvas). O router automático escolhe sozinho a ferramenta e o agente certos para cada pergunta — e, se pedires algo com vários passos, monta um plano de execução visível antes de responder.', null, { minimal: true });
+
+    // carrega a visão inicial do grafo
+    const initialCypher = PRESETS[0].cypher.replace('{{LIMIT}}', currentLimit());
+    document.getElementById('customCypher').value = initialCypher;
+    renderGraph(initialCypher);
+  } catch (err) {
+    console.error(err);
+    setConnected(false, 'Falha na ligação: ' + (err.message || err));
+  }
+});
+
+document.getElementById('personalitySelect').addEventListener('change', (e) => { state.personality = e.target.value; savePrefs(); });
+
+// -------- Chamada à Groq API (endpoint compatível com OpenAI) --------
+async function callGroq(system, userText, maxTokens, history) {
+  const url = 'https://api.groq.com/openai/v1/chat/completions';
+  const messages = [
+    { role: 'system', content: system },
+    ...(history || []),
+    { role: 'user', content: userText }
+  ];
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + state.apiKey
+    },
+    body: JSON.stringify({
+      model: state.model,
+      messages,
+      max_tokens: maxTokens || 1000,
+      temperature: 0.2
+    })
+  });
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error('Groq API (' + resp.status + '): ' + errText.slice(0, 200));
+  }
+  const data = await resp.json();
+  const choice = (data.choices || [])[0];
+  if (!choice) throw new Error('Groq não devolveu resposta.');
+  return (choice.message?.content || '').trim();
+}
+
+// -------- Chamada à Groq API com streaming (SSE), para respostas finais em texto --------
+async function callGroqStream(system, userText, maxTokens, history, onDelta) {
+  const url = 'https://api.groq.com/openai/v1/chat/completions';
+  const messages = [
+    { role: 'system', content: system },
+    ...(history || []),
+    { role: 'user', content: userText }
+  ];
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + state.apiKey
+    },
+    body: JSON.stringify({
+      model: state.model,
+      messages,
+      max_tokens: maxTokens || 1000,
+      temperature: 0.2,
+      stream: true
+    })
+  });
+  if (!resp.ok || !resp.body) {
+    const errText = resp.body ? await resp.text() : 'sem corpo de resposta';
+    throw new Error('Groq API (' + resp.status + '): ' + errText.slice(0, 200));
+  }
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let full = '';
+  let buffer = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data:')) continue;
+      const payload = trimmed.slice(5).trim();
+      if (payload === '[DONE]') continue;
+      try {
+        const json = JSON.parse(payload);
+        const delta = json.choices?.[0]?.delta?.content;
+        if (delta) {
+          full += delta;
+          if (onDelta) onDelta(full, delta);
+        }
+      } catch (err) { /* linha incompleta, ignora */ }
+    }
+  }
+  return full.trim();
+}
+
+// -------- Conversas: persistência local (localStorage), isolada por projeto --------
+function CONV_STORAGE_KEY_FN() { return scopedKey('fitbro_chat_conversations_v1'); }
+state.conversations = [];
+state.currentConversationId = null;
+
+function loadConversationsFromStorage() {
+  try {
+    const raw = localStorage.getItem(CONV_STORAGE_KEY_FN());
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.warn('Não foi possível ler as conversas guardadas:', err);
+    return [];
+  }
+}
+function persistConversations() {
+  try {
+    localStorage.setItem(CONV_STORAGE_KEY_FN(), JSON.stringify(state.conversations));
+  } catch (err) {
+    console.warn('Não foi possível guardar as conversas:', err);
+  }
+}
+function getCurrentConversation() {
+  return state.conversations.find(c => c.id === state.currentConversationId) || null;
+}
+function formatRelativeDate(ts) {
+  const d = new Date(ts);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  const isYest = d.toDateString() === yest.toDateString();
+  const hhmm = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+  if (sameDay) return 'Hoje, ' + hhmm;
+  if (isYest) return 'Ontem, ' + hhmm;
+  return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: '2-digit' });
+}
+
+function startNewConversation() {
+  const conv = {
+    id: 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    title: 'Nova conversa',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    messages: []
+  };
+  state.conversations.unshift(conv);
+  state.currentConversationId = conv.id;
+  state.history = [];
+  chatLog.innerHTML = '';
+  persistConversations();
+  renderConversationList();
+  const label = document.getElementById('activeConvLabel');
+  if (label) label.textContent = 'Nova conversa';
+  return conv;
+}
+
+function selectConversation(id) {
+  const conv = state.conversations.find(c => c.id === id);
+  if (!conv) return;
+  state.currentConversationId = id;
+  chatLog.innerHTML = '';
+  let lastQuestion = '';
+  conv.messages.forEach(m => {
+    if (m.role === 'user') lastQuestion = m.text;
+    const opts = m.error ? { minimal: true } : { question: lastQuestion };
+    const bubble = addMessage(m.role === 'user' ? 'user' : 'bot', m.text, m.cypher || undefined, opts);
+    if (m.error) bubble.classList.add('error');
+  });
+  state.history = conv.messages.map(m => ({ role: m.role === 'user' ? 'user' : 'model', text: m.text }));
+  renderConversationList();
+  const label = document.getElementById('activeConvLabel');
+  if (label) label.textContent = conv.title || 'Conversa';
+}
+
+function deleteConversation(id) {
+  const wasCurrent = state.currentConversationId === id;
+  state.conversations = state.conversations.filter(c => c.id !== id);
+  persistConversations();
+  if (wasCurrent) {
+    if (state.conversations.length) {
+      const mostRecent = [...state.conversations].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+      selectConversation(mostRecent.id);
+    } else {
+      state.currentConversationId = null;
+      state.history = [];
+      chatLog.innerHTML = '';
+      renderConversationList();
+    }
+  } else {
+    renderConversationList();
+  }
+}
+
+function renderConversationList() {
+  const wrap = document.getElementById('convList');
+  if (!state.conversations.length) {
+    wrap.innerHTML = '<div class="conv-empty">Ainda sem conversas guardadas. Escreve uma pergunta para começares uma.</div>';
+    return;
+  }
+  const sorted = [...state.conversations].sort((a, b) => b.updatedAt - a.updatedAt);
+  wrap.innerHTML = '';
+  sorted.forEach(conv => {
+    const item = document.createElement('div');
+    item.className = 'conv-item' + (conv.id === state.currentConversationId ? ' active' : '');
+    item.innerHTML = `
+      <div class="conv-item-main">
+        <div class="conv-title">${escapeHtml(conv.title || 'Nova conversa')}</div>
+        <div class="conv-date">${formatRelativeDate(conv.updatedAt)}</div>
+      </div>
+      <button class="conv-delete" title="Eliminar conversa">×</button>
+    `;
+    item.addEventListener('click', (e) => {
+      if (e.target.closest('.conv-delete')) return;
+      selectConversation(conv.id);
+      closeSidebarDrawer();
+    });
+    item.querySelector('.conv-delete').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteConversation(conv.id);
+    });
+    wrap.appendChild(item);
+  });
+}
+
+document.getElementById('newConvBtn').addEventListener('click', () => { startNewConversation(); closeSidebarDrawer(); });
+
+// =====================================================================
+// DRAWER MOBILE: sidebar de conversas/projetos desliza sobre o chat
+// =====================================================================
+function openSidebarDrawer() {
+  document.getElementById('convSidebar').classList.add('open');
+  document.getElementById('sidebarBackdrop').classList.add('show');
+}
+function closeSidebarDrawer() {
+  document.getElementById('convSidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('show');
+}
+document.getElementById('sidebarToggleBtn').addEventListener('click', openSidebarDrawer);
+document.getElementById('sidebarBackdrop').addEventListener('click', closeSidebarDrawer);
+
+// -------- Memória da conversa (para perguntas gerais com contexto + persistência) --------
+function saveMessage(role, text, opts) {
+  opts = opts || {};
+  if (!state.currentConversationId) startNewConversation();
+  const conv = getCurrentConversation();
+  conv.messages.push({ role: role === 'user' ? 'user' : 'bot', text, cypher: opts.cypher || null, error: !!opts.error });
+  conv.updatedAt = Date.now();
+  if (role === 'user' && conv.messages.filter(m => m.role === 'user').length === 1) {
+    conv.title = text.length > 46 ? text.slice(0, 45) + '…' : text;
+  }
+  state.history.push({ role: role === 'user' ? 'user' : 'model', text });
+  if (state.history.length > 16) state.history.splice(0, state.history.length - 16);
+  persistConversations();
+  renderConversationList();
+}
+function historyForGroq() {
+  return state.history.slice(0, -1).slice(-14).map(h => ({
+    role: h.role === 'user' ? 'user' : 'assistant',
+    content: h.text
+  }));
+}
+
+// =====================================================================
+// PREFERÊNCIAS PERSISTENTES (agente, personalidade, Tavily key)
+// =====================================================================
+const PREFS_KEY = 'fitbro_prefs_v1';
+function savePrefs() {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({
+      agent: state.agent, personality: state.personality, tavilyKey: state.tavilyKey
+    }));
+  } catch (err) { console.warn('Não foi possível guardar preferências:', err); }
+}
+function loadPrefs() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
+    state.agent = raw.agent || 'geral';
+    state.personality = raw.personality || 'consultor';
+    state.tavilyKey = raw.tavilyKey || null;
+  } catch (err) { /* mantém defaults */ }
+}
+
+// =====================================================================
+// MEMÓRIA DE LONGO PRAZO (com consentimento explícito)
+// =====================================================================
+function MEM_KEY_FN() { return scopedKey('fitbro_long_term_memory_v1'); }
+const MEM_CONSENT_KEY = 'fitbro_memory_consent_v1';
+function memConsentGiven() { return localStorage.getItem(MEM_CONSENT_KEY) === '1'; }
+function setMemConsent(v) { localStorage.setItem(MEM_CONSENT_KEY, v ? '1' : '0'); }
+function loadMemories() {
+  if (!memConsentGiven()) return [];
+  try { return JSON.parse(localStorage.getItem(MEM_KEY_FN()) || '[]'); } catch (err) { return []; }
+}
+function saveMemories(list) { try { localStorage.setItem(MEM_KEY_FN(), JSON.stringify(list)); } catch (err) {} }
+function getLongTermMemoryText() {
+  const list = loadMemories();
+  if (!list.length) return '';
+  return list.map(m => '- ' + m).join('\n');
+}
+function renderMemoryModal() {
+  document.getElementById('memConsent').checked = memConsentGiven();
+  const list = loadMemories();
+  const box = document.getElementById('memList');
+  box.innerHTML = '';
+  if (!list.length) {
+    box.innerHTML = '<div style="color:var(--text-dim);font-size:12px;">Ainda sem notas guardadas.</div>';
+  }
+  list.forEach((m, i) => {
+    const item = document.createElement('div');
+    item.className = 'mem-item';
+    const span = document.createElement('span'); span.textContent = m;
+    const del = document.createElement('button'); del.textContent = '✕';
+    del.addEventListener('click', () => { list.splice(i, 1); saveMemories(list); renderMemoryModal(); });
+    item.appendChild(span); item.appendChild(del);
+    box.appendChild(item);
+  });
+}
+
+// =====================================================================
+// FEEDBACK (👍/👎) + CORREÇÕES (aprendizagem leve)
+// =====================================================================
+function FEEDBACK_KEY_FN() { return scopedKey('fitbro_corrections_v1'); }
+function loadCorrections() { try { return JSON.parse(localStorage.getItem(FEEDBACK_KEY_FN()) || '[]'); } catch (err) { return []; } }
+function saveCorrection(question, badAnswer, correction) {
+  const list = loadCorrections();
+  list.push({ question, badAnswer, correction, ts: Date.now() });
+  if (list.length > 50) list.splice(0, list.length - 50);
+  localStorage.setItem(FEEDBACK_KEY_FN(), JSON.stringify(list));
+}
+function getRelevantCorrections() {
+  const list = loadCorrections();
+  if (!list.length) return '';
+  return list.slice(-5).map(c => `- Pergunta parecida: "${c.question}" → correção do utilizador: "${c.correction}"`).join('\n');
+}
+
+// =====================================================================
+// ESTATÍSTICAS DE USO (dashboard pessoal, isolado por projeto)
+// =====================================================================
+function USAGE_KEY_FN() { return scopedKey('fitbro_usage_v1'); }
+function loadUsage() {
+  try { return Object.assign({ messages: 0, tokensEst: 0, responseTimes: [], up: 0, down: 0 }, JSON.parse(localStorage.getItem(USAGE_KEY_FN()) || '{}')); }
+  catch (err) { return { messages: 0, tokensEst: 0, responseTimes: [], up: 0, down: 0 }; }
+}
+function saveUsage() { try { localStorage.setItem(USAGE_KEY_FN(), JSON.stringify(state.usage)); } catch (err) {} }
+function trackUsage(question) {
+  state.usage.messages++;
+  state.usage.tokensEst += Math.round(question.length / 4);
+  saveUsage();
+}
+function trackResponseTime(startedAt) {
+  const ms = Date.now() - startedAt;
+  state.usage.responseTimes.push(ms);
+  if (state.usage.responseTimes.length > 200) state.usage.responseTimes.shift();
+  saveUsage();
+}
+function renderStatsModal() {
+  const grid = document.getElementById('statGrid');
+  const avg = state.usage.responseTimes.length
+    ? Math.round(state.usage.responseTimes.reduce((a, b) => a + b, 0) / state.usage.responseTimes.length / 100) / 10
+    : 0;
+  const cards = [
+    { num: state.usage.messages, lbl: 'Mensagens enviadas' },
+    { num: state.usage.tokensEst.toLocaleString('pt-PT'), lbl: 'Tokens estimados (entrada)' },
+    { num: avg + 's', lbl: 'Tempo médio de resposta' },
+    { num: state.conversations.length, lbl: 'Conversas guardadas' },
+    { num: state.usage.up, lbl: '👍 Respostas úteis' },
+    { num: state.usage.down, lbl: '👎 Respostas a melhorar' }
+  ];
+  grid.innerHTML = cards.map(c => `<div class="stat-card"><div class="num">${c.num}</div><div class="lbl">${c.lbl}</div></div>`).join('');
+}
+
+// =====================================================================
+// CANVAS · editor lateral de documentos, isolado por projeto
+// =====================================================================
+function CANVAS_KEY_FN() { return scopedKey('fitbro_canvas_docs_v1'); }
+function loadCanvasDocs() {
+  try { const raw = JSON.parse(localStorage.getItem(CANVAS_KEY_FN()) || '[]'); return Array.isArray(raw) ? raw : []; }
+  catch (err) { return []; }
+}
+function persistCanvasDocs() {
+  try { localStorage.setItem(CANVAS_KEY_FN(), JSON.stringify(state.canvasDocs)); } catch (err) {}
+}
+function getCurrentCanvasDoc() {
+  return state.canvasDocs.find(d => d.id === state.currentCanvasDocId) || null;
+}
+function renderCanvasDocList() {
+  const wrap = document.getElementById('canvasDocList');
+  if (!state.canvasDocs.length) {
+    wrap.innerHTML = '<div class="canvas-empty">Sem documentos ainda. Cria um novo ou envia uma resposta do chat para o canvas.</div>';
+    return;
+  }
+  const sorted = [...state.canvasDocs].sort((a, b) => b.updatedAt - a.updatedAt);
+  wrap.innerHTML = '';
+  sorted.forEach(doc => {
+    const row = document.createElement('div');
+    row.className = 'canvas-doc-item' + (doc.id === state.currentCanvasDocId ? ' active' : '');
+    row.innerHTML = `<span>${escapeHtml(doc.title || 'Sem título')}</span>`;
+    const del = document.createElement('button');
+    del.textContent = '✕';
+    del.title = 'Eliminar';
+    del.addEventListener('click', (e) => { e.stopPropagation(); deleteCanvasDoc(doc.id); });
+    row.appendChild(del);
+    row.addEventListener('click', () => { state.currentCanvasDocId = doc.id; loadCanvasIntoEditor(); renderCanvasDocList(); });
+    wrap.appendChild(row);
+  });
+}
+function loadCanvasIntoEditor() {
+  const doc = getCurrentCanvasDoc();
+  document.getElementById('canvasTitleInput').value = doc ? doc.title : 'Documento sem título';
+  document.getElementById('canvasEditor').value = doc ? doc.content : '';
+}
+function newCanvasDoc(title, content) {
+  const doc = { id: 'doc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), title: title || 'Documento sem título', content: content || '', createdAt: Date.now(), updatedAt: Date.now() };
+  state.canvasDocs.push(doc);
+  state.currentCanvasDocId = doc.id;
+  persistCanvasDocs();
+  renderCanvasDocList();
+  loadCanvasIntoEditor();
+  return doc;
+}
+function deleteCanvasDoc(id) {
+  state.canvasDocs = state.canvasDocs.filter(d => d.id !== id);
+  persistCanvasDocs();
+  if (state.currentCanvasDocId === id) {
+    state.currentCanvasDocId = state.canvasDocs.length ? state.canvasDocs[0].id : null;
+  }
+  renderCanvasDocList();
+  loadCanvasIntoEditor();
+}
+function openCanvas() {
+  state.canvasOpen = true;
+  document.getElementById('canvasPanel').classList.add('open');
+  document.querySelector('.chat-shell').classList.add('canvas-open');
+}
+function closeCanvas() {
+  state.canvasOpen = false;
+  document.getElementById('canvasPanel').classList.remove('open');
+  document.querySelector('.chat-shell').classList.remove('canvas-open');
+}
+function toggleCanvas() { state.canvasOpen ? closeCanvas() : openCanvas(); }
+function sendTextToCanvas(text, title) {
+  const doc = newCanvasDoc(title || ('Resposta · ' + new Date().toLocaleString('pt-PT')), text);
+  openCanvas();
+  return doc;
+}
+
+document.getElementById('canvasBtn').addEventListener('click', toggleCanvas);
+document.getElementById('canvasCloseBtn').addEventListener('click', closeCanvas);
+document.getElementById('canvasNewBtn').addEventListener('click', () => newCanvasDoc());
+document.getElementById('canvasDeleteBtn').addEventListener('click', () => {
+  if (state.currentCanvasDocId) deleteCanvasDoc(state.currentCanvasDocId);
+});
+document.getElementById('canvasTitleInput').addEventListener('input', (e) => {
+  const doc = getCurrentCanvasDoc();
+  if (!doc) return;
+  doc.title = e.target.value;
+  doc.updatedAt = Date.now();
+  persistCanvasDocs();
+  renderCanvasDocList();
+});
+let canvasSaveTimer = null;
+document.getElementById('canvasEditor').addEventListener('input', (e) => {
+  let doc = getCurrentCanvasDoc();
+  if (!doc) doc = newCanvasDoc(document.getElementById('canvasTitleInput').value);
+  doc.content = e.target.value;
+  doc.updatedAt = Date.now();
+  const status = document.getElementById('canvasStatus');
+  status.textContent = 'A guardar...';
+  clearTimeout(canvasSaveTimer);
+  canvasSaveTimer = setTimeout(() => {
+    persistCanvasDocs();
+    status.textContent = 'Guardado automaticamente · ' + new Date().toLocaleTimeString('pt-PT');
+  }, 400);
+});
+function downloadTextFile(filename, content) {
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+document.getElementById('canvasExportMdBtn').addEventListener('click', () => {
+  const doc = getCurrentCanvasDoc();
+  if (!doc) return;
+  downloadTextFile((doc.title || 'documento').replace(/[^\w\- ]/g, '') + '.md', doc.content);
+});
+document.getElementById('canvasExportTxtBtn').addEventListener('click', () => {
+  const doc = getCurrentCanvasDoc();
+  if (!doc) return;
+  downloadTextFile((doc.title || 'documento').replace(/[^\w\- ]/g, '') + '.txt', doc.content);
+});
+
+// =====================================================================
+// RAG SOBRE FICHEIROS (PDF, Word, Excel, CSV, TXT) — parsing local + keyword search
+// =====================================================================
+function chunkText(text, size) {
+  size = size || 900;
+  const chunks = [];
+  const clean = text.replace(/\s+/g, ' ').trim();
+  for (let i = 0; i < clean.length; i += size) chunks.push(clean.slice(i, i + size));
+  return chunks;
+}
+
+async function parseFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'pdf') {
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    let text = '';
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      text += content.items.map(i => i.str).join(' ') + '\n';
+    }
+    return text;
+  }
+  if (ext === 'docx') {
+    const buf = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer: buf });
+    return result.value;
+  }
+  if (ext === 'xlsx' || ext === 'xls') {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    let text = '';
+    wb.SheetNames.forEach(name => { text += `\n[Folha: ${name}]\n` + XLSX.utils.sheet_to_csv(wb.Sheets[name]); });
+    return text;
+  }
+  if (ext === 'csv' || ext === 'txt' || ext === 'md') {
+    return await file.text();
+  }
+  throw new Error('Formato não suportado: .' + ext);
+}
+
+function renderFileChips() {
+  const wrap = document.getElementById('fileChips');
+  wrap.innerHTML = '';
+  state.ragFiles.forEach((f, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'file-chip';
+    chip.innerHTML = `<span>📄 ${escapeHtml(f.name)} · ${f.chunks.length} excertos</span>`;
+    const del = document.createElement('button'); del.textContent = '✕';
+    del.addEventListener('click', () => { state.ragFiles.splice(i, 1); renderFileChips(); });
+    chip.appendChild(del);
+    wrap.appendChild(chip);
+
+    if (f.tabular && !f.chartRendered) {
+      f.chartRendered = true;
+      const chartBtn = document.createElement('button');
+      chartBtn.textContent = '📊';
+      chartBtn.title = 'Analisar dados com gráfico';
+      chartBtn.addEventListener('click', () => renderFileChart(f));
+      chip.appendChild(chartBtn);
+    }
+  });
+}
+
+document.getElementById('attachBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files || []);
+  for (const file of files) {
+    try {
+      const text = await parseFile(file);
+      const ext = file.name.split('.').pop().toLowerCase();
+      const tabular = ['xlsx', 'xls', 'csv'].includes(ext);
+      const chunks = chunkText(text).map(t => ({ text: t }));
+      state.ragFiles.push({ name: file.name, chunks, tabular, rawText: tabular ? text : null });
+      addMessage('bot', `Li e indexei "${file.name}" (${chunks.length} excertos). Já podes perguntar-me sobre o conteúdo.`, null, { minimal: true });
+    } catch (err) {
+      addMessage('bot', 'Não consegui ler "' + file.name + '": ' + err.message, null, { minimal: true }).classList.add('error');
+    }
+  }
+  renderFileChips();
+  e.target.value = '';
+});
+
+function retrieveRagContext(question) {
+  if (!state.ragFiles.length) return '';
+  const qWords = question.toLowerCase().match(/[a-zà-ú0-9]{3,}/g) || [];
+  if (!qWords.length) return '';
+  const scored = [];
+  state.ragFiles.forEach(f => {
+    f.chunks.forEach(c => {
+      const lower = c.text.toLowerCase();
+      let score = 0;
+      qWords.forEach(w => { if (lower.includes(w)) score++; });
+      if (score > 0) scored.push({ score, text: c.text, file: f.name });
+    });
+  });
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored.slice(0, 4);
+  if (!top.length) return '';
+  return top.map(t => `(de ${t.file}) ${t.text}`).join('\n---\n').slice(0, 6000);
+}
+
+function renderFileChart(file) {
+  let rows;
+  try {
+    const wb = XLSX.read(file.rawText, { type: 'string' });
+    rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+  } catch (err) { return; }
+  if (!rows || rows.length < 2) return;
+  const header = rows[0];
+  const numericCol = header.findIndex((h, i) => i > 0 && rows.slice(1).every(r => !r[i] || !isNaN(parseFloat(r[i]))));
+  const valueColIdx = numericCol > 0 ? numericCol : 1;
+  const labels = rows.slice(1, 21).map(r => String(r[0]));
+  const values = rows.slice(1, 21).map(r => parseFloat(r[valueColIdx]) || 0);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'file-chart-wrap';
+  const canvas = document.createElement('canvas');
+  wrap.appendChild(canvas);
+  chatLog.appendChild(wrap);
+  chatLog.scrollTop = chatLog.scrollHeight;
+  new Chart(canvas, {
+    type: 'bar',
+    data: { labels, datasets: [{ label: header[valueColIdx] || 'Valor', data: values, backgroundColor: '#57E1C4' }] },
+    options: { responsive: true, plugins: { legend: { labels: { color: '#E7ECF6' } } },
+      scales: { x: { ticks: { color: '#93A0BE' } }, y: { ticks: { color: '#93A0BE' } } } }
+  });
+}
+
+// =====================================================================
+// PESQUISA NA INTERNET (Tavily API — opcional, key grátis)
+// =====================================================================
+async function tavilySearch(query) {
+  const resp = await fetch('https://api.tavily.com/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ api_key: state.tavilyKey, query, max_results: 5, search_depth: 'basic' })
+  });
+  if (!resp.ok) throw new Error('Tavily API (' + resp.status + ')');
+  const data = await resp.json();
+  return (data.results || []).map(r => ({ title: r.title, url: r.url, content: (r.content || '').slice(0, 500) }));
+}
+
+// =====================================================================
+// PLUGINS SEM KEY: calculadora e meteorologia (Open-Meteo)
+// =====================================================================
+function tryCalculator(question) {
+  const m = question.match(/^(?:calcula|calculadora|quanto\s+(?:é|e)|resolve)?[\s:]*([0-9+\-*/().,%\s^]+)$/i);
+  if (!m) return null;
+  let expr = m[1].trim();
+  if (!/[0-9]/.test(expr) || !/[+\-*/^%]/.test(expr)) return null;
+  expr = expr.replace(/,/g, '.').replace(/\^/g, '**');
+  if (!/^[0-9+\-*/().\s%]+$/.test(expr.replace(/\*\*/g, ''))) return null;
+  try {
+    const safeExpr = expr.replace(/%/g, '/100');
+    const value = Function('"use strict"; return (' + safeExpr + ')')();
+    if (typeof value !== 'number' || !isFinite(value)) return null;
+    return expr + ' = ' + (Math.round(value * 1e6) / 1e6);
+  } catch (err) { return null; }
+}
+
+const WMO_CODES = { 0: 'céu limpo', 1: 'poucas nuvens', 2: 'parcialmente nublado', 3: 'nublado', 45: 'nevoeiro', 48: 'nevoeiro gelado',
+  51: 'chuvisco fraco', 53: 'chuvisco', 55: 'chuvisco forte', 61: 'chuva fraca', 63: 'chuva', 65: 'chuva forte',
+  71: 'neve fraca', 73: 'neve', 75: 'neve forte', 80: 'aguaceiros', 81: 'aguaceiros fortes', 82: 'aguaceiros violentos',
+  95: 'trovoada', 96: 'trovoada com granizo', 99: 'trovoada forte com granizo' };
+
+async function tryWeather(cityRaw) {
+  try {
+    const geoResp = await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=pt&name=' + encodeURIComponent(cityRaw));
+    const geoData = await geoResp.json();
+    const place = geoData.results && geoData.results[0];
+    if (!place) return 'Não encontrei essa localidade ("' + cityRaw + '").';
+    const wResp = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&current_weather=true&timezone=auto`);
+    const wData = await wResp.json();
+    const cw = wData.current_weather;
+    if (!cw) return 'Não consegui obter o tempo para ' + place.name + '.';
+    const desc = WMO_CODES[cw.weathercode] || 'condições desconhecidas';
+    return `Tempo agora em ${place.name}${place.country ? ', ' + place.country : ''}: ${cw.temperature}°C, vento ${cw.windspeed} km/h, ${desc}.`;
+  } catch (err) { return null; }
+}
+
+// =====================================================================
+// VOZ: ditar perguntas (Web Speech API) + ouvir respostas (TTS)
+// =====================================================================
+let recognizer = null, recognizing = false;
+function speakText(text) {
+  if (!('speechSynthesis' in window)) { alert('O teu browser não suporta síntese de voz.'); return; }
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'pt-PT';
+  window.speechSynthesis.speak(utter);
+}
+document.getElementById('micBtn').addEventListener('click', () => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('O teu browser não suporta reconhecimento de voz (funciona no Chrome/Edge).'); return; }
+  const micBtn = document.getElementById('micBtn');
+  if (recognizing) { recognizer && recognizer.stop(); return; }
+  recognizer = new SR();
+  recognizer.lang = 'pt-PT';
+  recognizer.interimResults = false;
+  recognizer.onstart = () => { recognizing = true; micBtn.classList.add('recording'); micBtn.textContent = '🎤 A ouvir...'; };
+  recognizer.onend = () => { recognizing = false; micBtn.classList.remove('recording'); micBtn.textContent = '🎤 Voz'; };
+  recognizer.onerror = () => { recognizing = false; micBtn.classList.remove('recording'); micBtn.textContent = '🎤 Voz'; };
+  recognizer.onresult = (event) => {
+    const text = event.results[0][0].transcript;
+    input.value = (input.value ? input.value + ' ' : '') + text;
+    input.dispatchEvent(new Event('input'));
+  };
+  recognizer.start();
+});
+
+// =====================================================================
+// EXPORTAR CONVERSA: PDF, PPTX, Excel
+// =====================================================================
+function currentExchanges() {
+  const conv = getCurrentConversation();
+  if (!conv) return [];
+  const pairs = [];
+  let lastQuestion = null;
+  conv.messages.forEach(m => {
+    if (m.role === 'user') lastQuestion = m.text;
+    else if (m.role === 'bot' && lastQuestion) { pairs.push({ question: lastQuestion, answer: m.text }); lastQuestion = null; }
+  });
+  return pairs;
+}
+
+function exportConversationToPdf() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = 18;
+  doc.setFontSize(16); doc.text('FitBro · Conversa exportada', 14, y); y += 10;
+  doc.setFontSize(10);
+  currentExchanges().forEach(ex => {
+    if (y > 270) { doc.addPage(); y = 18; }
+    doc.setFont(undefined, 'bold');
+    y = writeWrapped(doc, 'P: ' + ex.question, y);
+    doc.setFont(undefined, 'normal');
+    y = writeWrapped(doc, 'R: ' + ex.answer, y);
+    y += 4;
+  });
+  doc.save('fitbro-conversa.pdf');
+}
+function writeWrapped(doc, text, y) {
+  const lines = doc.splitTextToSize(text, 180);
+  lines.forEach(line => {
+    if (y > 280) { doc.addPage(); y = 18; }
+    doc.text(line, 14, y); y += 6;
+  });
+  return y + 2;
+}
+
+async function exportConversationToPptx() {
+  const pres = new PptxGenJS();
+  const exchanges = currentExchanges();
+  if (!exchanges.length) { alert('Ainda não há perguntas e respostas nesta conversa para exportar.'); return; }
+  exchanges.forEach(ex => {
+    const slide = pres.addSlide();
+    slide.addText(ex.question.slice(0, 90), { x: 0.4, y: 0.3, w: 9, fontSize: 20, bold: true, color: '1F3864' });
+    slide.addText(ex.answer.slice(0, 900), { x: 0.4, y: 1.2, w: 9, h: 5, fontSize: 13, color: '333333' });
+  });
+  await pres.writeFile({ fileName: 'fitbro-apresentacao.pptx' });
+}
+
+function exportConversationToXlsx() {
+  const exchanges = currentExchanges();
+  const rows = exchanges.map(ex => ({ Pergunta: ex.question, Resposta: ex.answer }));
+  const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ Pergunta: '', Resposta: '' }]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Conversa');
+  XLSX.writeFile(wb, 'fitbro-conversa.xlsx');
+}
+
+function exportSingleExchangeToPdf(question, answer) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = 18;
+  doc.setFontSize(16); doc.text('FitBro · Resposta', 14, y); y += 10;
+  doc.setFontSize(10);
+  doc.setFont(undefined, 'bold'); y = writeWrapped(doc, 'P: ' + (question || ''), y);
+  doc.setFont(undefined, 'normal'); y = writeWrapped(doc, 'R: ' + answer, y);
+  doc.save('fitbro-resposta.pdf');
+}
+async function exportSingleExchangeToPptx(question, answer) {
+  const pres = new PptxGenJS();
+  const slide = pres.addSlide();
+  slide.addText((question || 'FitBro').slice(0, 90), { x: 0.4, y: 0.3, w: 9, fontSize: 20, bold: true, color: '1F3864' });
+  slide.addText(answer.slice(0, 900), { x: 0.4, y: 1.2, w: 9, h: 5, fontSize: 13, color: '333333' });
+  await pres.writeFile({ fileName: 'fitbro-slide.pptx' });
+}
+
+document.getElementById('exportBtnChat').addEventListener('click', () => {
+  document.getElementById('exportMenu').classList.toggle('open');
+});
+document.getElementById('exportMenu').addEventListener('click', (e) => {
+  const fmt = e.target.getAttribute('data-fmt');
+  if (!fmt) return;
+  document.getElementById('exportMenu').classList.remove('open');
+  if (fmt === 'pdf') exportConversationToPdf();
+  else if (fmt === 'pptx') exportConversationToPptx();
+  else if (fmt === 'xlsx') exportConversationToXlsx();
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.tb-dropdown')) document.getElementById('exportMenu').classList.remove('open');
+});
+
+// =====================================================================
+// ALTERNATIVAS HONESTAS: email (mailto), evento (Google Calendar), lembrete local
+// =====================================================================
+document.getElementById('mailBtn').addEventListener('click', () => {
+  const exchanges = currentExchanges();
+  const body = exchanges.map(ex => `P: ${ex.question}\nR: ${ex.answer}\n`).join('\n').slice(0, 1500);
+  const subject = 'Resumo da conversa FitBro';
+  window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+});
+document.getElementById('calBtn').addEventListener('click', () => {
+  const title = prompt('Título do evento:', 'Reunião sobre FitBro');
+  if (!title) return;
+  const when = prompt('Data e hora (AAAA-MM-DD HH:MM), duração 1h:', new Date().toISOString().slice(0, 16).replace('T', ' '));
+  if (!when) return;
+  const start = new Date(when.replace(' ', 'T'));
+  if (isNaN(start.getTime())) { alert('Data inválida.'); return; }
+  const end = new Date(start.getTime() + 60 * 60000);
+  const fmt = d => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent('Criado a partir do FitBro Chat')}`;
+  window.open(url, '_blank');
+});
+document.getElementById('reminderBtn').addEventListener('click', () => {
+  const mins = prompt('Lembrar-me daqui a quantos minutos? (só funciona enquanto este separador estiver aberto)', '10');
+  const n = parseInt(mins, 10);
+  if (!n || n <= 0) return;
+  const text = prompt('Texto do lembrete:', 'Continuar a conversa no FitBro');
+  if (Notification && Notification.permission !== 'granted') Notification.requestPermission();
+  setTimeout(() => {
+    if (Notification && Notification.permission === 'granted') new Notification('FitBro — Lembrete', { body: text || '' });
+    else alert('⏰ Lembrete: ' + (text || ''));
+  }, n * 60000);
+  addMessage('bot', `Ok, lembro-te daqui a ${n} minuto(s) — mantém este separador aberto.`, null, { minimal: true });
+});
+
+// =====================================================================
+// MODAIS: memória e estatísticas
+// =====================================================================
+document.getElementById('memBtn').addEventListener('click', () => { renderMemoryModal(); document.getElementById('memModal').classList.add('open'); });
+document.getElementById('memModalClose').addEventListener('click', () => document.getElementById('memModal').classList.remove('open'));
+document.getElementById('memConsent').addEventListener('change', (e) => setMemConsent(e.target.checked));
+document.getElementById('memAddBtn').addEventListener('click', () => {
+  const val = document.getElementById('memInput').value.trim();
+  if (!val) return;
+  if (!memConsentGiven()) { alert('Ativa primeiro a caixa de consentimento no topo.'); return; }
+  const list = loadMemories(); list.push(val); saveMemories(list);
+  document.getElementById('memInput').value = '';
+  renderMemoryModal();
+});
+document.getElementById('statsBtn').addEventListener('click', () => { renderStatsModal(); document.getElementById('statsModal').classList.add('open'); });
+document.getElementById('statsModalClose').addEventListener('click', () => document.getElementById('statsModal').classList.remove('open'));
+document.querySelectorAll('.modal-overlay').forEach(ov => {
+  ov.addEventListener('click', (e) => { if (e.target === ov) ov.classList.remove('open'); });
+});
+
+function extractJson(text) {
+  const cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start === -1 || end === -1) throw new Error('Resposta sem JSON válido.');
+  return JSON.parse(cleaned.slice(start, end + 1));
+}
+
+const FORBIDDEN = /\b(CREATE|MERGE|DELETE|SET|REMOVE|DROP|DETACH|CALL\s+apoc\.|LOAD\s+CSV)\b/i;
+
+function assertReadOnly(cypher) {
+  if (!cypher || !cypher.trim()) throw new Error('Consulta vazia.');
+  if (FORBIDDEN.test(cypher)) throw new Error('Consulta bloqueada por segurança (contém operação de escrita).');
+}
+
+// -------- Conversão de valores Neo4j para JSON simples --------
+function plainValue(v) {
+  if (v == null) return v;
+  if (neo4j.isInt(v)) return v.toNumber();
+  if (Array.isArray(v)) return v.map(plainValue);
+  if (typeof v === 'object') {
+    if (v.labels && v.properties) {
+      const props = {}; for (const k in v.properties) props[k] = plainValue(v.properties[k]);
+      return { _labels: v.labels, ...props };
+    }
+    if (v.type && v.properties && v.start !== undefined) {
+      const props = {}; for (const k in v.properties) props[k] = plainValue(v.properties[k]);
+      return { _type: v.type, ...props };
+    }
+    const out = {};
+    for (const k in v) out[k] = plainValue(v[k]);
+    return out;
+  }
+  return v;
+}
+
+async function runCypher(cypher) {
+  const session = state.driver.session({ defaultAccessMode: neo4j.session.READ });
+  try {
+    const result = await session.executeRead(tx => tx.run(cypher));
+    return result.records.map(r => {
+      const obj = {};
+      r.keys.forEach(k => { obj[k] = plainValue(r.get(k)); });
+      return obj;
+    });
+  } finally {
+    await session.close();
+  }
+}
+
+// -------- Fluxo principal do chat: pergunta -> decide grafo/geral -> responde --------
+// -------- Executa UMA rota (grafo | pesquisa | geral) já decidida, com streaming opcional --------
+async function runToolForQuestion(question, route, opts) {
+  opts = opts || {};
+  const agentKey = route.agente || 'geral';
+  const agentLabel = (AGENT_PERSONAS[agentKey] || AGENT_PERSONAS.geral).label;
+
+  // -------- Caminho GRAFO --------
+  if (route.tipo === 'grafo' && route.cypher && route.cypher.trim()) {
+    setStageStatus('tool', 'active');
+    let cypher = route.cypher;
+    try {
+      assertReadOnly(cypher);
+    } catch (err) {
+      throw Object.assign(new Error('Essa consulta foi bloqueada por segurança: ' + err.message), { cypher });
+    }
+    let results;
+    try {
+      results = await runCypher(cypher);
+    } catch (err) {
+      try {
+        const fixRaw = await callGroq(
+          buildSystemRoute(),
+          `A consulta seguinte falhou no Neo4j com o erro "${err.message}". Corrige-a para a pergunta original: "${question}".\nConsulta anterior: ${cypher}`,
+          500
+        );
+        const fixParsed = extractJson(fixRaw);
+        cypher = fixParsed.cypher;
+        assertReadOnly(cypher);
+        results = await runCypher(cypher);
+      } catch (err2) {
+        throw Object.assign(new Error('A consulta ao Neo4j falhou: ' + (err2.message || err.message)), { cypher });
+      }
+    }
+    setStageStatus('tool', 'done');
+    setStageStatus('answer', 'active');
+    const resultsForModel = JSON.stringify(results).slice(0, 12000);
+    const answerPrompt = `Pergunta do utilizador: "${question}"\n\nConsulta Cypher usada: ${cypher}\n\nResultados (JSON): ${resultsForModel}\n\nNúmero de registos: ${results.length}`;
+    const answer = opts.stream
+      ? await callGroqStream(buildSystemAnswer(), answerPrompt, 800, null, opts.onDelta)
+      : await callGroq(buildSystemAnswer(), answerPrompt, 800);
+    setStageStatus('answer', 'done');
+    return { answer, cypher, tool: 'grafo', badge: '🔗 Ferramenta: Grafo Neo4j' };
+  }
+
+  // -------- Caminho PESQUISA (Tavily) --------
+  if (route.tipo === 'pesquisa') {
+    setStageStatus('tool', 'active');
+    if (!state.tavilyKey) {
+      setStageStatus('tool', 'done');
+      setStageStatus('answer', 'active');
+      const prefix = 'Essa pergunta parece precisar de informação atual da internet, mas não tens uma Tavily API key configurada nas definições (é grátis em tavily.com). Vou responder com o que sei, mas pode estar desatualizado:\n\n';
+      const fallback = opts.stream
+        ? await callGroqStream(buildSystemGeneral(agentKey), question, 900, historyForGroq(), opts.onDelta ? (full) => opts.onDelta(prefix + full) : null)
+        : await safeGeneral(question, agentKey);
+      setStageStatus('answer', 'done');
+      return { answer: prefix + fallback, cypher: null, tool: 'pesquisa', badge: '🌐 Ferramenta: Pesquisa Web (sem key)' };
+    }
+    const searchResults = await tavilySearch(question);
+    setStageStatus('tool', 'done');
+    setStageStatus('answer', 'active');
+    const searchPrompt = `Pergunta: "${question}"\n\nResultados de pesquisa (JSON): ${JSON.stringify(searchResults).slice(0, 10000)}`;
+    const answer = opts.stream
+      ? await callGroqStream(buildSystemSearchAnswer(), searchPrompt, 900, null, opts.onDelta)
+      : await callGroq(buildSystemSearchAnswer(), searchPrompt, 900);
+    setStageStatus('answer', 'done');
+    return { answer, cypher: null, tool: 'pesquisa', badge: '🌐 Ferramenta: Pesquisa Web' };
+  }
+
+  // -------- Caminho GERAL (com RAG de ficheiros anexados, se existirem) --------
+  setStageStatus('tool', 'active');
+  const ragContext = retrieveRagContext(question);
+  const userText = ragContext ? `${question}\n\n[Excertos relevantes dos ficheiros anexados]\n${ragContext}` : question;
+  setStageStatus('tool', 'done');
+  setStageStatus('answer', 'active');
+  const answer = opts.stream
+    ? await callGroqStream(buildSystemGeneral(agentKey), userText, 900, historyForGroq(), opts.onDelta)
+    : await callGroq(buildSystemGeneral(agentKey), userText, 900, historyForGroq());
+  setStageStatus('answer', 'done');
+  return { answer, cypher: null, tool: 'geral', badge: '🤖 Agente automático: ' + agentLabel };
+}
+
+async function safeGeneral(question, agentKey) {
+  const ragContext = retrieveRagContext(question);
+  const userText = ragContext ? `${question}\n\n[Excertos relevantes dos ficheiros anexados]\n${ragContext}` : question;
+  return await callGroq(buildSystemGeneral(agentKey), userText, 900, historyForGroq());
+}
+
+// -------- Planeador de tarefas: decompõe, executa passo a passo e sintetiza --------
+async function runPlan(question, route, startedAt) {
+  const steps = route.subtarefas.map(s => ({ text: s, answer: '' }));
+
+  const planWrap = document.createElement('div');
+  planWrap.className = 'msg bot';
+  const badge = document.createElement('div'); badge.className = 'route-badge'; badge.textContent = '🧭 Planeador de Tarefas';
+  planWrap.appendChild(badge);
+  const box = document.createElement('div');
+  box.className = 'plan-box';
+  const title = document.createElement('div');
+  title.className = 'plan-title';
+  title.textContent = '📋 Pedido complexo detetado — plano com ' + steps.length + ' passos';
+  box.appendChild(title);
+  const stepEls = steps.map(s => {
+    const el = document.createElement('div');
+    el.className = 'plan-step';
+    el.innerHTML = `<span class="step-icon">○</span><div class="step-text">${escapeHtml(s.text)}</div>`;
+    box.appendChild(el);
+    return el;
+  });
+  planWrap.appendChild(box);
+  chatLog.appendChild(planWrap);
+  chatLog.scrollTop = chatLog.scrollHeight;
+
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    const el = stepEls[i];
+    el.classList.add('active');
+    el.querySelector('.step-icon').textContent = '◐';
+    setStageStatus('tool', 'active');
+    try {
+      let subRoute = { tipo: 'geral', cypher: '', agente: route.agente || 'geral' };
+      try {
+        const raw = await callGroq(buildSystemRoute(), step.text, 500);
+        const parsed = extractJson(raw);
+        if (parsed && ['grafo', 'geral', 'pesquisa'].includes(parsed.tipo)) subRoute = parsed;
+      } catch (err) { /* mantém subRoute geral por omissão */ }
+      const result = await runToolForQuestion(step.text, subRoute, { stream: false });
+      step.answer = result.answer;
+      el.classList.remove('active'); el.classList.add('done');
+      el.querySelector('.step-icon').textContent = '✓';
+      const resEl = document.createElement('div');
+      resEl.className = 'step-result';
+      resEl.textContent = truncate(result.answer, 220);
+      el.appendChild(resEl);
+    } catch (err) {
+      step.answer = 'Erro: ' + (err.message || err);
+      el.classList.remove('active'); el.classList.add('error');
+      el.querySelector('.step-icon').textContent = '✕';
+      const resEl = document.createElement('div');
+      resEl.className = 'step-result';
+      resEl.textContent = step.answer;
+      el.appendChild(resEl);
+    }
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+
+  setStageStatus('answer', 'active');
+  const synthBubble = addMessage('bot', '', null, { minimal: true });
+  const synthWrap = synthBubble.parentElement;
+  const synthBadge = document.createElement('div');
+  synthBadge.className = 'route-badge';
+  synthBadge.textContent = '✍️ Síntese final do plano';
+  synthWrap.insertBefore(synthBadge, synthBubble);
+  synthBubble.textContent = 'A sintetizar os resultados dos passos...';
+  synthBubble.classList.add('thinking');
+
+  const synthPrompt = `Pergunta original do utilizador: "${question}"\n\nExecutei o seguinte plano de subtarefas e obtive estes resultados:\n\n` +
+    steps.map((s, i) => `${i + 1}. ${s.text}\nResultado: ${s.answer}`).join('\n\n') +
+    `\n\nEscreve agora, em português, UMA resposta final coesa e bem organizada (podes usar secções curtas ou uma lista) que combine tudo isto e responda diretamente à pergunta original. Não te limites a repetir os passos — integra a informação.`;
+
+  let streamedAny = false;
+  let finalAnswer = '';
+  try {
+    finalAnswer = await callGroqStream(
+      'És um assistente que sintetiza resultados de várias subtarefas de um plano numa resposta final clara e bem estruturada, em português.',
+      synthPrompt, 900, null,
+      (full) => {
+        if (!streamedAny) { synthBubble.classList.remove('thinking'); streamedAny = true; }
+        synthBubble.innerHTML = escapeHtml(full) + '<span class="stream-cursor"></span>';
+        chatLog.scrollTop = chatLog.scrollHeight;
+      }
+    );
+  } catch (err) {
+    finalAnswer = 'Não consegui sintetizar a resposta final (' + err.message + '). Resultados individuais:\n' + steps.map(s => '- ' + s.text + ': ' + s.answer).join('\n');
+  }
+  synthBubble.classList.remove('thinking');
+  synthBubble.textContent = finalAnswer;
+  synthWrap.appendChild(buildFeedbackRow(finalAnswer, question));
+  synthWrap.appendChild(buildPostActionsRow(finalAnswer, question));
+  setStageStatus('answer', 'done');
+  saveMessage('model', finalAnswer, { plan: steps.map(s => ({ text: s.text, answer: s.answer })) });
+  trackResponseTime(startedAt);
+}
+
+async function handleQuestion(question) {
+  addMessage('user', question, null, { minimal: true });
+  saveMessage('user', question);
+  const startedAt = Date.now();
+  trackUsage(question);
+
+  showStages([{ key: 'route', label: '🧭 Router' }, { key: 'tool', label: '🔧 Ferramenta' }, { key: 'answer', label: '✍️ Resposta' }]);
+  setStageStatus('route', 'active');
+
+  // -------- 0. Plugins locais rápidos (sem LLM): calculadora e meteorologia --------
+  const calc = tryCalculator(question);
+  if (calc) {
+    setStageStatus('route', 'done'); setStageStatus('tool', 'done'); setStageStatus('answer', 'done');
+    addMessage('bot', calc, null, { question, badge: '🧮 Ferramenta: Calculadora' });
+    saveMessage('model', calc);
+    return;
+  }
+  const weatherMatch = question.match(/(?:tempo|meteorologia|previs[ãa]o)\s+(?:em|para|no|na|de)\s+(.+)/i);
+  if (weatherMatch) {
+    setStageStatus('tool', 'active');
+    const thinkingBubble = addMessage('bot', 'A consultar o Open-Meteo...', null, { minimal: true });
+    thinkingBubble.parentElement.querySelector('.bubble').classList.add('thinking');
+    const weatherText = await tryWeather(weatherMatch[1].trim());
+    thinkingBubble.parentElement.remove();
+    if (weatherText) {
+      setStageStatus('route', 'done'); setStageStatus('tool', 'done'); setStageStatus('answer', 'done');
+      addMessage('bot', weatherText, null, { question, badge: '⛅ Ferramenta: Meteorologia' });
+      saveMessage('model', weatherText);
+      return;
+    }
+  }
+
+  let route = { tipo: 'geral', cypher: '', explicacao: '', agente: 'geral', subtarefas: [] };
+  try {
+    const raw = await callGroq(buildSystemRoute(), question, 600, historyForGroq());
+    const parsed = extractJson(raw);
+    if (parsed && ['grafo', 'geral', 'pesquisa', 'plano'].includes(parsed.tipo)) route = parsed;
+  } catch (err) {
+    console.warn('Falha ao decidir tipo de pergunta, a seguir para resposta geral:', err);
+  }
+  setStageStatus('route', 'done');
+
+  // -------- Caminho PLANO (pedido complexo com várias subtarefas) --------
+  if (route.tipo === 'plano' && Array.isArray(route.subtarefas) && route.subtarefas.length > 1) {
+    await runPlan(question, route, startedAt);
+    return;
+  }
+
+  // -------- Caminho direto, com resposta em streaming --------
+  const bubble = addMessage('bot', 'A trabalhar...', null, { minimal: true });
+  const wrap = bubble.parentElement;
+  bubble.classList.add('thinking');
+  let streamedAny = false;
+  try {
+    const result = await runToolForQuestion(question, route, {
+      stream: true,
+      onDelta: (full) => {
+        if (!streamedAny) { bubble.classList.remove('thinking'); streamedAny = true; }
+        bubble.innerHTML = escapeHtml(full) + '<span class="stream-cursor"></span>';
+        chatLog.scrollTop = chatLog.scrollHeight;
+      }
+    });
+    bubble.classList.remove('thinking');
+    bubble.textContent = result.answer;
+    if (result.badge) {
+      const badgeEl = document.createElement('div');
+      badgeEl.className = 'route-badge';
+      badgeEl.textContent = result.badge;
+      wrap.insertBefore(badgeEl, bubble);
+    }
+    if (result.cypher) {
+      const toggle = document.createElement('button');
+      toggle.className = 'cypher-toggle';
+      toggle.textContent = 'ver consulta Cypher';
+      const cbox = document.createElement('div');
+      cbox.className = 'cypher-box';
+      cbox.textContent = result.cypher;
+      toggle.onclick = () => { cbox.classList.toggle('show'); toggle.textContent = cbox.classList.contains('show') ? 'ocultar consulta Cypher' : 'ver consulta Cypher'; };
+      wrap.appendChild(toggle); wrap.appendChild(cbox);
+    }
+    wrap.appendChild(buildFeedbackRow(result.answer, question));
+    wrap.appendChild(buildPostActionsRow(result.answer, question));
+    saveMessage('model', result.answer, result.cypher ? { cypher: result.cypher } : {});
+    trackResponseTime(startedAt);
+  } catch (err) {
+    bubble.classList.remove('thinking');
+    bubble.classList.add('error');
+    bubble.textContent = err.message || 'Ocorreu um erro ao responder.';
+    if (err.cypher) {
+      const toggle = document.createElement('button');
+      toggle.className = 'cypher-toggle';
+      toggle.textContent = 'ver consulta Cypher';
+      const cbox = document.createElement('div');
+      cbox.className = 'cypher-box';
+      cbox.textContent = err.cypher;
+      toggle.onclick = () => { cbox.classList.toggle('show'); toggle.textContent = cbox.classList.contains('show') ? 'ocultar consulta Cypher' : 'ver consulta Cypher'; };
+      wrap.appendChild(toggle); wrap.appendChild(cbox);
+    }
+    setStageStatus('tool', 'done'); setStageStatus('answer', 'done');
+    saveMessage('model', bubble.textContent, { error: true });
+  }
+}
+
+
+// -------- Eventos de UI (chat) --------
+sendBtn.addEventListener('click', submit);
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
+});
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+});
+document.getElementById('suggestions').addEventListener('click', (e) => {
+  const q = e.target.getAttribute('data-q');
+  if (q) { input.value = q; submit(); }
+});
+
+async function submit() {
+  const q = input.value.trim();
+  if (!q || state.busy || !state.connected) return;
+  input.value = '';
+  input.style.height = 'auto';
+  setBusy(true);
+  try {
+    await handleQuestion(q);
+  } finally {
+    setBusy(false);
+    input.focus();
+  }
+}
+
+// =====================================================================
+// -------- Visualização do grafo (vis-network) --------
+// =====================================================================
+
+const LABEL_COLORS = {
+  Documento: 'var(--n-documento)'.trim(),
+  Modulo: '#57E1C4',
+  Ator: '#F5A524',
+  RequisitoFuncional: '#7AA2F7',
+  RequisitoNaoFuncional: '#F16A6A',
+  CategoriaRNF: '#C792EA',
+  Prioridade: '#A3E635',
+  EntidadeDados: '#38BDF8',
+  EstadoDesenvolvimento: '#9AA6C4',
+  PlanoSubscricao: '#F5C244',
+  Funcionalidade: '#4DD0E1'
+};
+// resolve CSS var fallback for Documento (var() strings don't work as inline canvas colors)
+LABEL_COLORS.Documento = '#5b6b8e';
+
+const LABEL_NAMES_PT = {
+  Documento: 'Documento',
+  Modulo: 'Módulo',
+  Ator: 'Ator',
+  RequisitoFuncional: 'Requisito Funcional',
+  RequisitoNaoFuncional: 'Requisito Não Funcional',
+  CategoriaRNF: 'Categoria RNF',
+  Prioridade: 'Prioridade',
+  EntidadeDados: 'Entidade de Dados',
+  EstadoDesenvolvimento: 'Estado de Desenvolvimento',
+  PlanoSubscricao: 'Plano de Subscrição',
+  Funcionalidade: 'Funcionalidade Comercial'
+};
+const LABEL_ORDER = ['Modulo','RequisitoFuncional','RequisitoNaoFuncional','Ator','Prioridade','CategoriaRNF','EntidadeDados','EstadoDesenvolvimento','PlanoSubscricao','Funcionalidade','Documento'];
+
+const PRESETS = [
+  { label: 'Visão geral', cypher: 'MATCH (n)-[r]->(m)\nRETURN n, r, m\nLIMIT {{LIMIT}}' },
+  { label: 'Requisitos × Módulo', cypher: 'MATCH (rf:RequisitoFuncional)-[r:PERTENCE_A]->(m:Modulo)\nRETURN rf, r, m\nLIMIT {{LIMIT}}' },
+  { label: 'Requisitos × Ator', cypher: 'MATCH (rf:RequisitoFuncional)-[r:ENVOLVE_ATOR]->(a:Ator)\nRETURN rf, r, a\nLIMIT {{LIMIT}}' },
+  { label: 'RNF × Categoria', cypher: 'MATCH (rnf:RequisitoNaoFuncional)-[r:DA_CATEGORIA]->(c:CategoriaRNF)\nRETURN rnf, r, c\nLIMIT {{LIMIT}}' },
+  { label: 'Módulo × Dados', cypher: 'MATCH (m:Modulo)-[r:UTILIZA_ENTIDADE]->(e:EntidadeDados)\nRETURN m, r, e\nLIMIT {{LIMIT}}' },
+  { label: 'Prioridades', cypher: 'MATCH (x)-[r:TEM_PRIORIDADE]->(p:Prioridade)\nRETURN x, r, p\nLIMIT {{LIMIT}}' },
+  { label: '🟢 Estado de Desenvolvimento', cypher: 'MATCH (rf:RequisitoFuncional)-[r:TEM_ESTADO]->(e:EstadoDesenvolvimento)\nRETURN rf, r, e\nLIMIT {{LIMIT}}' },
+  { label: 'Planos × Funcionalidades', cypher: 'MATCH (p:PlanoSubscricao)-[r:INCLUI]->(f:Funcionalidade)\nRETURN p, r, f\nLIMIT {{LIMIT}}' },
+  { label: 'Funcionalidades já implementadas', cypher: 'MATCH (f:Funcionalidade)-[r:IMPLEMENTADO_POR]->(rf:RequisitoFuncional)\nRETURN f, r, rf\nLIMIT {{LIMIT}}' }
+];
+
+const VIS_OPTIONS = {
+  nodes: { borderWidth: 2, shadow: false, scaling: { min: 10, max: 24 } },
+  edges: { smooth: { type: 'continuous' }, width: 1 },
+  physics: {
+    solver: 'forceAtlas2Based',
+    forceAtlas2Based: { gravitationalConstant: -45, springLength: 110, springConstant: 0.06, damping: 0.5 },
+    stabilization: { iterations: 150 }
+  },
+  interaction: { hover: true, tooltipDelay: 150, navigationButtons: false, zoomView: true },
+  layout: { improvedLayout: true }
+};
+
+const EDGE_COLOR_DIM = { color: 'rgba(147,160,190,0.35)', highlight: '#57E1C4' };
+const EDGE_COLOR_FADED = { color: 'rgba(147,160,190,0.05)', highlight: '#57E1C4' };
+
+let network = null, nodesDS = null, edgesDS = null, physicsOn = true;
+let hiddenGroups = new Set();
+let hoverActive = false;
+
+function nodeElementId(n) { return n.elementId !== undefined ? n.elementId : n.identity.toString(); }
+function relElementId(r) { return r.elementId !== undefined ? r.elementId : r.identity.toString(); }
+function relStartId(r) { return r.startNodeElementId !== undefined ? r.startNodeElementId : r.start.toString(); }
+function relEndId(r) { return r.endNodeElementId !== undefined ? r.endNodeElementId : r.end.toString(); }
+
+function bestCaption(props, labels) {
+  const candidates = ['nome', 'titulo', 'id', 'descricao', 'area'];
+  for (const c of candidates) { if (props[c]) return String(props[c]); }
+  return (labels && labels[0]) || '(nó)';
+}
+function truncate(s, n) { return s && s.length > n ? s.slice(0, n - 1) + '…' : s; }
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function currentLimit() {
+  const v = parseInt(document.getElementById('limitInput').value, 10);
+  return Number.isFinite(v) && v > 0 ? v : 120;
+}
+
+async function runGraphCypher(cypher, params) {
+  assertReadOnly(cypher);
+  const session = state.driver.session({ defaultAccessMode: neo4j.session.READ });
+  try {
+    return await session.executeRead(tx => tx.run(cypher, params || {}));
+  } finally {
+    await session.close();
+  }
+}
+
+function buildGraphFromRecords(records) {
+  const nodeMap = new Map();
+  const edgeMap = new Map();
+
+  function ingestNode(n) {
+    if (!n || !n.labels) return;
+    const id = nodeElementId(n);
+    if (nodeMap.has(id)) return;
+    const label = n.labels[0];
+    const props = {}; for (const k in n.properties) props[k] = plainValue(n.properties[k]);
+    // Os nós :EstadoDesenvolvimento trazem a sua própria cor real (verde/amarelo/laranja) — usa-a diretamente.
+    const baseColor = (label === 'EstadoDesenvolvimento' && props.cor) ? props.cor : (LABEL_COLORS[label] || '#6b7a9c');
+    nodeMap.set(id, {
+      id,
+      label: truncate(bestCaption(props, n.labels), 28),
+      title: bestCaption(props, n.labels),
+      group: label,
+      color: { background: baseColor, border: 'rgba(255,255,255,0.2)', highlight: { background: baseColor, border: '#fff' } },
+      font: { color: '#0B1220', size: 12, face: 'Space Grotesk, sans-serif' },
+      shape: 'dot',
+      size: label === 'Modulo' ? 17 : 12,
+      opacity: 1,
+      hidden: hiddenGroups.has(label),
+      _labels: n.labels,
+      _props: props
+    });
+  }
+  function ingestRel(r) {
+    if (!r || !r.type) return;
+    const id = relElementId(r);
+    if (edgeMap.has(id)) return;
+    const props = {}; for (const k in r.properties) props[k] = plainValue(r.properties[k]);
+    edgeMap.set(id, {
+      id,
+      from: relStartId(r),
+      to: relEndId(r),
+      label: r.type,
+      arrows: 'to',
+      color: { ...EDGE_COLOR_DIM },
+      font: { color: '#93A0BE', size: 9, strokeWidth: 0, align: 'middle' },
+      _props: props
+    });
+  }
+  function dispatch(v) {
+    if (v == null) return;
+    if (Array.isArray(v)) { v.forEach(dispatch); return; }
+    if (v.labels) ingestNode(v);
+    else if (v.type && v.start !== undefined) ingestRel(v);
+  }
+
+  for (const rec of records) {
+    for (const key of rec.keys) dispatch(rec.get(key));
+  }
+
+  // Sempre que a relação TEM_ESTADO vem incluída na consulta, pinta o próprio
+  // requisito (RF/RNF) com a cor real do seu estado de desenvolvimento
+  // (verde = Desenvolvido, amarelo = Em desenvolvimento, laranja = Por desenvolver),
+  // em vez do azul/vermelho genérico — assim o progresso fica visível de imediato.
+  for (const edge of edgeMap.values()) {
+    if (edge.label !== 'TEM_ESTADO') continue;
+    const fromNode = nodeMap.get(edge.from);
+    const toNode = nodeMap.get(edge.to);
+    if (!fromNode || !toNode || toNode.group !== 'EstadoDesenvolvimento') continue;
+    const estadoCor = toNode._props.cor || LABEL_COLORS.EstadoDesenvolvimento;
+    fromNode.color = { background: estadoCor, border: 'rgba(255,255,255,0.25)', highlight: { background: estadoCor, border: '#fff' } };
+    fromNode.font = { ...fromNode.font, color: '#0B1220' };
+    fromNode._estadoNome = toNode._props.nome;
+    fromNode._estadoCor = estadoCor;
+  }
+
+  return { nodes: Array.from(nodeMap.values()), edges: Array.from(edgeMap.values()) };
+}
+
+function updateStats() {
+  const el = document.getElementById('graphStats');
+  if (!nodesDS || !edgesDS) { el.textContent = ''; return; }
+  const visible = nodesDS.get().filter(n => !n.hidden).length;
+  el.textContent = visible + ' / ' + nodesDS.length + ' nós · ' + edgesDS.length + ' relações';
+}
+
+function updateLegend(nodes) {
+  const present = new Set(nodes.map(n => n.group));
+  const legend = document.getElementById('legend');
+  legend.innerHTML = '';
+
+  // Sempre que o grafo atual inclui nós de estado (RF/RNF -[:TEM_ESTADO]-> EstadoDesenvolvimento),
+  // mostra as cores REAIS de progresso em vez (ou para além) do azul/vermelho genérico.
+  const estadosPresentes = new Map();
+  nodes.forEach(n => {
+    if (n.group === 'EstadoDesenvolvimento') {
+      const nome = (n._props && n._props.nome) || n.label;
+      const cor = (n._props && n._props.cor) || n.color?.background;
+      if (nome && cor) estadosPresentes.set(nome, cor);
+    }
+  });
+
+  LABEL_ORDER.filter(l => present.has(l)).forEach(l => {
+    const isReqComEstado = (l === 'RequisitoFuncional' || l === 'RequisitoNaoFuncional') && estadosPresentes.size > 0;
+    const btn = document.createElement('button');
+    btn.className = 'legend-item' + (hiddenGroups.has(l) ? ' off' : '');
+    btn.title = 'Mostrar/ocultar ' + (LABEL_NAMES_PT[l] || l) + (isReqComEstado ? ' (cor = estado de desenvolvimento real)' : '');
+    btn.innerHTML = `<span class="legend-dot" style="background:${LABEL_COLORS[l]}"></span>${escapeHtml(LABEL_NAMES_PT[l] || l)}${isReqComEstado ? ' <span class="legend-note">●estado</span>' : ''}`;
+    btn.addEventListener('click', () => toggleGroup(l));
+    legend.appendChild(btn);
+  });
+
+  if (estadosPresentes.size) {
+    const sep = document.createElement('span');
+    sep.className = 'legend-sep';
+    legend.appendChild(sep);
+    // Ordena pela mesma ordem da legenda original do documento (verde → amarelo → laranja)
+    const order = ['Desenvolvido', 'Em desenvolvimento', 'Por desenvolver'];
+    const nomes = Array.from(estadosPresentes.keys()).sort((a, b) => {
+      const ia = order.indexOf(a), ib = order.indexOf(b);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+    nomes.forEach(nome => {
+      const cor = estadosPresentes.get(nome);
+      const item = document.createElement('span');
+      item.className = 'legend-item legend-estado';
+      item.title = 'Estado real: ' + nome;
+      item.innerHTML = `<span class="legend-dot" style="background:${cor}"></span>${escapeHtml(nome)}`;
+      legend.appendChild(item);
+    });
+  }
+}
+
+function toggleGroup(label) {
+  if (hiddenGroups.has(label)) hiddenGroups.delete(label); else hiddenGroups.add(label);
+  if (!nodesDS) return;
+  const updates = nodesDS.get().filter(n => n.group === label).map(n => ({ id: n.id, hidden: hiddenGroups.has(label) }));
+  nodesDS.update(updates);
+  updateLegend(nodesDS.get());
+  updateStats();
+}
+
+function renderNodeDetails(node) {
+  const el = document.getElementById('nodeDetails');
+  const labelName = LABEL_NAMES_PT[node.group] || node.group;
+  const resolvedColor = (node.color && node.color.background) || LABEL_COLORS[node.group] || '#6b7a9c';
+  const rows = Object.entries(node._props || {}).map(([k, v]) =>
+    `<div class="detail-row"><span class="detail-key">${escapeHtml(k)}</span><span class="detail-val">${escapeHtml(v)}</span></div>`
+  ).join('');
+  const estadoRow = node._estadoNome
+    ? `<div class="detail-row estado-row"><span class="detail-key">Estado de desenvolvimento</span><span class="detail-val"><span class="legend-dot" style="background:${node._estadoCor}"></span>${escapeHtml(node._estadoNome)}</span></div>`
+    : '';
+  el.innerHTML = `
+    <div class="detail-header"><span class="detail-badge" style="background:${resolvedColor}">${escapeHtml(labelName)}</span></div>
+    <div class="detail-rows">${estadoRow}${rows || (estadoRow ? '' : '<div class="detail-empty">Sem propriedades.</div>')}</div>
+    <div class="detail-actions">
+      <button class="detail-action" id="centerNodeBtn">Centrar</button>
+      <button class="detail-action primary" id="expandNodeBtn">Expandir vizinhos</button>
+    </div>
+  `;
+  document.getElementById('centerNodeBtn').addEventListener('click', () => {
+    if (network) network.focus(node.id, { scale: 1.3, animation: true });
+  });
+  document.getElementById('expandNodeBtn').addEventListener('click', () => expandNode(node.id));
+}
+function renderEdgeDetails(edge) {
+  const el = document.getElementById('nodeDetails');
+  const rows = Object.entries(edge._props || {}).map(([k, v]) =>
+    `<div class="detail-row"><span class="detail-key">${escapeHtml(k)}</span><span class="detail-val">${escapeHtml(v)}</span></div>`
+  ).join('');
+  el.innerHTML = `
+    <div class="detail-header"><span class="detail-badge rel">${escapeHtml(edge.label)}</span></div>
+    <div class="detail-rows">${rows || '<div class="detail-empty">Sem propriedades na relação.</div>'}</div>
+  `;
+}
+function clearDetails() {
+  document.getElementById('nodeDetails').innerHTML = '<div class="node-details-empty">Clica num nó ou relação para ver os detalhes. Duplo-clique num nó expande os seus vizinhos diretamente no grafo.</div>';
+}
+function onGraphClick(params) {
+  if (params.nodes.length) {
+    renderNodeDetails(nodesDS.get(params.nodes[0]));
+  } else if (params.edges.length) {
+    renderEdgeDetails(edgesDS.get(params.edges[0]));
+  } else {
+    clearDetails();
+  }
+}
+function onGraphDoubleClick(params) {
+  if (params.nodes.length) expandNode(params.nodes[0]);
+}
+
+// -------- Realce de vizinhança ao passar o rato --------
+function highlightNeighbors(nodeId) {
+  if (!network || !nodesDS || !edgesDS) return;
+  const connectedNodes = new Set(network.getConnectedNodes(nodeId));
+  const connectedEdges = new Set(network.getConnectedEdges(nodeId));
+  nodesDS.update(nodesDS.get().map(n => ({
+    id: n.id,
+    opacity: (n.id === nodeId || connectedNodes.has(n.id)) ? 1 : 0.15
+  })));
+  edgesDS.update(edgesDS.get().map(e => ({
+    id: e.id,
+    color: connectedEdges.has(e.id) ? { color: '#57E1C4', highlight: '#57E1C4' } : { ...EDGE_COLOR_FADED }
+  })));
+  hoverActive = true;
+}
+function clearHighlight() {
+  if (!hoverActive || !nodesDS || !edgesDS) { hoverActive = false; return; }
+  nodesDS.update(nodesDS.get().map(n => ({ id: n.id, opacity: 1 })));
+  edgesDS.update(edgesDS.get().map(e => ({ id: e.id, color: { ...EDGE_COLOR_DIM } })));
+  hoverActive = false;
+}
+
+// -------- Expandir vizinhos de um nó (sem limpar o grafo atual) --------
+async function expandNode(nodeId) {
+  if (!state.connected || !network) return;
+  try {
+    const result = await runGraphCypher(
+      'MATCH (n)-[r]-(m) WHERE elementId(n) = $id RETURN n, r, m LIMIT 60',
+      { id: nodeId }
+    );
+    const { nodes, edges } = buildGraphFromRecords(result.records);
+    nodesDS.update(nodes);
+    edgesDS.update(edges);
+    network.setOptions({ physics: { enabled: true } });
+    network.once('stabilizationIterationsDone', () => { if (physicsOn) network.setOptions({ physics: { enabled: false } }); });
+    network.stabilize();
+    updateLegend(nodesDS.get());
+    updateStats();
+  } catch (err) {
+    console.warn('Falha ao expandir nó:', err);
+  }
+}
+
+function renderGraph(cypher, params) {
+  const emptyEl = document.getElementById('graphEmpty');
+  emptyEl.style.display = 'flex';
+  emptyEl.textContent = 'A carregar o grafo...';
+  runGraphCypher(cypher, params).then(result => {
+    const { nodes, edges } = buildGraphFromRecords(result.records);
+    if (nodes.length === 0) {
+      emptyEl.textContent = 'Sem resultados para esta consulta.';
+      emptyEl.style.display = 'flex';
+      if (network) { nodesDS.clear(); edgesDS.clear(); }
+      updateLegend([]);
+      updateStats();
+      clearDetails();
+      return;
+    }
+    emptyEl.style.display = 'none';
+    if (!network) {
+      nodesDS = new vis.DataSet(nodes);
+      edgesDS = new vis.DataSet(edges);
+      network = new vis.Network(document.getElementById('graphCanvas'), { nodes: nodesDS, edges: edgesDS }, VIS_OPTIONS);
+      network.on('click', onGraphClick);
+      network.on('doubleClick', onGraphDoubleClick);
+      network.on('hoverNode', p => highlightNeighbors(p.node));
+      network.on('blurNode', clearHighlight);
+      network.on('stabilizationIterationsDone', () => { if (physicsOn) network.setOptions({ physics: { enabled: false } }); });
+    } else {
+      nodesDS.clear(); edgesDS.clear();
+      nodesDS.add(nodes); edgesDS.add(edges);
+      network.setOptions({ physics: { enabled: true } });
+      network.once('stabilizationIterationsDone', () => { if (physicsOn) network.setOptions({ physics: { enabled: false } }); });
+      network.stabilize();
+    }
+    updateLegend(nodes);
+    updateStats();
+    clearDetails();
+  }).catch(err => {
+    emptyEl.textContent = 'Erro ao consultar o grafo: ' + err.message;
+    emptyEl.style.display = 'flex';
+  });
+}
+
+function renderPresets() {
+  const wrap = document.getElementById('presets');
+  wrap.innerHTML = '';
+  PRESETS.forEach((p, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = p.label;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const cypher = p.cypher.replace('{{LIMIT}}', currentLimit());
+      document.getElementById('customCypher').value = cypher;
+      if (state.connected) renderGraph(cypher);
+    });
+    wrap.appendChild(btn);
+  });
+}
+renderPresets();
+
+document.getElementById('runCustomCypher').addEventListener('click', () => {
+  if (!state.connected) return;
+  const cypher = document.getElementById('customCypher').value.trim();
+  if (!cypher) return;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  renderGraph(cypher);
+});
+
+document.getElementById('limitInput').addEventListener('change', () => {
+  const activeBtn = document.querySelector('.preset-btn.active');
+  if (activeBtn && state.connected) activeBtn.click();
+});
+
+// -------- Procurar nó por nome/id --------
+function searchGraphNode() {
+  if (!state.connected) return;
+  const q = document.getElementById('graphSearch').value.trim();
+  if (!q) return;
+  const cypher = 'MATCH (n)\nWHERE any(k IN [\'nome\',\'titulo\',\'id\',\'descricao\'] WHERE toLower(toString(coalesce(n[k], \'\'))) CONTAINS toLower($q))\nOPTIONAL MATCH (n)-[r]-(m)\nRETURN n, r, m\nLIMIT ' + currentLimit();
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('customCypher').value = cypher;
+  renderGraph(cypher, { q });
+}
+document.getElementById('searchBtn').addEventListener('click', searchGraphNode);
+document.getElementById('graphSearch').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); searchGraphNode(); }
+});
+
+// -------- Zoom, ajuste, física, ecrã inteiro, exportação --------
+document.getElementById('fitBtn').addEventListener('click', () => { if (network) network.fit({ animation: true }); });
+document.getElementById('zoomInBtn').addEventListener('click', () => { if (network) network.moveTo({ scale: network.getScale() * 1.25, animation: true }); });
+document.getElementById('zoomOutBtn').addEventListener('click', () => { if (network) network.moveTo({ scale: network.getScale() * 0.8, animation: true }); });
+document.getElementById('physicsBtn').addEventListener('click', (e) => {
+  physicsOn = !physicsOn;
+  if (network) network.setOptions({ physics: { enabled: physicsOn } });
+  e.target.textContent = 'Física: ' + (physicsOn ? 'On' : 'Off');
+});
+document.getElementById('fullscreenBtn').addEventListener('click', () => {
+  const el = document.getElementById('graphCanvasWrap');
+  if (!document.fullscreenElement) {
+    el.requestFullscreen?.();
+  } else {
+    document.exitFullscreen?.();
+  }
+});
+document.addEventListener('fullscreenchange', () => { if (network) setTimeout(() => network.fit(), 150); });
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const canvas = document.querySelector('#graphCanvas canvas');
+  if (!canvas) return;
+  const link = document.createElement('a');
+  link.download = 'fitbro-grafo.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+});
+
+
+// -------- Tabs (mobile) --------
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.getElementById('graphPanel').classList.toggle('active', tab === 'graph');
+    document.getElementById('chatPanel').classList.toggle('active', tab === 'chat');
+    if (tab === 'graph' && network) setTimeout(() => network.fit(), 60);
+  });
+});
+
+// -------- Init: projetos primeiro (tudo o resto é isolado por projeto) --------
+// =====================================================================
+// PWA: registo do service worker + botão "Instalar app"
+// =====================================================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((err) => console.warn('Service worker não registado:', err));
+  });
+}
+let deferredInstallPrompt = null;
+const installBtn = document.getElementById('installBtn');
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  installBtn.hidden = false;
+});
+installBtn.addEventListener('click', async () => {
+  if (!deferredInstallPrompt) return;
+  installBtn.hidden = true;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+});
+window.addEventListener('appinstalled', () => { installBtn.hidden = true; });
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+  installBtn.hidden = true;
+}
+
+ensureDefaultProject();
+renderProjectSelector();
+
+// -------- Init: preferências, personalidade e estatísticas (dependem do projeto ativo) --------
+loadPrefs();
+state.usage = loadUsage();
+populateSelect('personalitySelect', PERSONALITY_STYLES, state.personality);
+if (state.tavilyKey) document.getElementById('tavilyKey').value = state.tavilyKey;
+
+// -------- Init: restaurar conversas, memória, ficheiros e canvas do projeto ativo --------
+loadProjectContext();
+</script>
+</body>
+</html>
