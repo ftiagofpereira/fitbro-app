@@ -1126,6 +1126,8 @@ document.getElementById('connectBtn').addEventListener('click', async () => {
     addMessage('bot', 'Ligado ao teu grafo FitBro no Neo4j Aura. Podes explorar o grafo visualmente no painel ao lado, perguntar-me dados concretos, pedir sugestões, anexar ficheiros para eu analisar, ou usar as ferramentas na barra por cima da caixa de texto (voz, memória, exportar, email, calendário, lembretes, canvas). O router automático escolhe sozinho a ferramenta e o agente certos para cada pergunta — e, se pedires algo com vários passos, monta um plano de execução visível antes de responder.', null, { minimal: true });
 
     // carrega a visão inicial do grafo
+    estadoByNodeId = new Map();
+    await preloadEstadosDesenvolvimento();
     const initialCypher = PRESETS[0].cypher.replace('{{LIMIT}}', currentLimit());
     document.getElementById('customCypher').value = initialCypher;
     renderGraph(initialCypher);
@@ -2405,6 +2407,11 @@ const EDGE_COLOR_FADED = { color: 'rgba(147,160,190,0.05)', highlight: '#57E1C4'
 
 let network = null, nodesDS = null, edgesDS = null, physicsOn = true;
 let hiddenGroups = new Set();
+// Guarda o estado de desenvolvimento (cor/nome) já "aprendido" para cada requisito
+// durante esta sessão, para que a cor real se mantenha mesmo quando uma pesquisa,
+// filtro, expansão de vizinhos ou preset seguinte não voltar a trazer a relação
+// TEM_ESTADO explicitamente nessa consulta.
+let estadoByNodeId = new Map();
 let hoverActive = false;
 
 function nodeElementId(n) { return n.elementId !== undefined ? n.elementId : n.identity.toString(); }
@@ -2436,6 +2443,27 @@ async function runGraphCypher(cypher, params) {
   }
 }
 
+// -------- Pré-carrega TODOS os estados de desenvolvimento assim que ligas,
+// para que a cor real (verde/amarelo/laranja) de cada requisito esteja sempre
+// correta desde o primeiro momento — mesmo antes de veres o preset "Estado de
+// Desenvolvimento", e mesmo em pesquisas/filtros/expansões que não voltem a
+// trazer a relação TEM_ESTADO explicitamente. --------
+async function preloadEstadosDesenvolvimento() {
+  try {
+    const result = await runGraphCypher(
+      'MATCH (rf)-[:TEM_ESTADO]->(e:EstadoDesenvolvimento) WHERE rf:RequisitoFuncional OR rf:RequisitoNaoFuncional RETURN elementId(rf) AS id, e.nome AS nome, e.cor AS cor'
+    );
+    result.records.forEach(rec => {
+      const id = rec.get('id');
+      const nome = rec.get('nome');
+      const cor = rec.get('cor');
+      if (id && nome && cor) estadoByNodeId.set(id, { cor, nome });
+    });
+  } catch (err) {
+    console.warn('Não foi possível pré-carregar os estados de desenvolvimento:', err);
+  }
+}
+
 function buildGraphFromRecords(records) {
   const nodeMap = new Map();
   const edgeMap = new Map();
@@ -2447,7 +2475,13 @@ function buildGraphFromRecords(records) {
     const label = n.labels[0];
     const props = {}; for (const k in n.properties) props[k] = plainValue(n.properties[k]);
     // Os nós :EstadoDesenvolvimento trazem a sua própria cor real (verde/amarelo/laranja) — usa-a diretamente.
-    const baseColor = (label === 'EstadoDesenvolvimento' && props.cor) ? props.cor : (LABEL_COLORS[label] || '#6b7a9c');
+    let baseColor = (label === 'EstadoDesenvolvimento' && props.cor) ? props.cor : (LABEL_COLORS[label] || '#6b7a9c');
+    // Se já sabemos (de uma consulta anterior nesta sessão) qual o estado real
+    // deste requisito, aplica-o já aqui — mesmo que esta consulta em concreto
+    // não traga a relação TEM_ESTADO (ex.: pesquisa, expandir vizinhos, presets
+    // sem relação de estado). Isto garante que a cor nunca "volta a trás".
+    const estadoConhecido = (label === 'RequisitoFuncional' || label === 'RequisitoNaoFuncional') ? estadoByNodeId.get(id) : null;
+    if (estadoConhecido) baseColor = estadoConhecido.cor;
     nodeMap.set(id, {
       id,
       label: truncate(bestCaption(props, n.labels), 28),
@@ -2460,7 +2494,8 @@ function buildGraphFromRecords(records) {
       opacity: 1,
       hidden: hiddenGroups.has(label),
       _labels: n.labels,
-      _props: props
+      _props: props,
+      ...(estadoConhecido ? { _estadoNome: estadoConhecido.nome, _estadoCor: estadoConhecido.cor } : {})
     });
   }
   function ingestRel(r) {
@@ -2494,16 +2529,20 @@ function buildGraphFromRecords(records) {
   // requisito (RF/RNF) com a cor real do seu estado de desenvolvimento
   // (verde = Desenvolvido, amarelo = Em desenvolvimento, laranja = Por desenvolver),
   // em vez do azul/vermelho genérico — assim o progresso fica visível de imediato.
+  // E memoriza essa cor para esta continuar correta em consultas futuras (pesquisa,
+  // expandir vizinhos, presets) mesmo que não voltem a trazer a relação TEM_ESTADO.
   for (const edge of edgeMap.values()) {
     if (edge.label !== 'TEM_ESTADO') continue;
     const fromNode = nodeMap.get(edge.from);
     const toNode = nodeMap.get(edge.to);
     if (!fromNode || !toNode || toNode.group !== 'EstadoDesenvolvimento') continue;
     const estadoCor = toNode._props.cor || LABEL_COLORS.EstadoDesenvolvimento;
+    const estadoNome = toNode._props.nome;
     fromNode.color = { background: estadoCor, border: 'rgba(255,255,255,0.25)', highlight: { background: estadoCor, border: '#fff' } };
     fromNode.font = { ...fromNode.font, color: '#0B1220' };
-    fromNode._estadoNome = toNode._props.nome;
+    fromNode._estadoNome = estadoNome;
     fromNode._estadoCor = estadoCor;
+    estadoByNodeId.set(fromNode.id, { cor: estadoCor, nome: estadoNome });
   }
 
   return { nodes: Array.from(nodeMap.values()), edges: Array.from(edgeMap.values()) };
@@ -2521,23 +2560,35 @@ function updateLegend(nodes) {
   const legend = document.getElementById('legend');
   legend.innerHTML = '';
 
-  // Sempre que o grafo atual inclui nós de estado (RF/RNF -[:TEM_ESTADO]-> EstadoDesenvolvimento),
-  // mostra as cores REAIS de progresso em vez (ou para além) do azul/vermelho genérico.
+  // Mostra as cores REAIS de progresso sempre que existam requisitos com estado
+  // conhecido no grafo atual — quer venham do nó :EstadoDesenvolvimento incluído
+  // nesta consulta, quer tenham sido "herdadas" de uma consulta anterior nesta
+  // sessão (pesquisa, expandir vizinhos, presets sem a relação TEM_ESTADO).
   const estadosPresentes = new Map();
+  let reqComEstado = 0, reqSemEstado = 0;
   nodes.forEach(n => {
     if (n.group === 'EstadoDesenvolvimento') {
       const nome = (n._props && n._props.nome) || n.label;
       const cor = (n._props && n._props.cor) || n.color?.background;
       if (nome && cor) estadosPresentes.set(nome, cor);
     }
+    if (n.group === 'RequisitoFuncional' || n.group === 'RequisitoNaoFuncional') {
+      if (n._estadoNome && n._estadoCor) {
+        estadosPresentes.set(n._estadoNome, n._estadoCor);
+        reqComEstado++;
+      } else {
+        reqSemEstado++;
+      }
+    }
   });
 
   LABEL_ORDER.filter(l => present.has(l)).forEach(l => {
-    const isReqComEstado = (l === 'RequisitoFuncional' || l === 'RequisitoNaoFuncional') && estadosPresentes.size > 0;
+    const isReq = l === 'RequisitoFuncional' || l === 'RequisitoNaoFuncional';
+    const nota = !isReq || reqComEstado === 0 ? '' : (reqSemEstado === 0 ? ' (cor = estado real)' : ' (cor = estado real quando conhecido)');
     const btn = document.createElement('button');
     btn.className = 'legend-item' + (hiddenGroups.has(l) ? ' off' : '');
-    btn.title = 'Mostrar/ocultar ' + (LABEL_NAMES_PT[l] || l) + (isReqComEstado ? ' (cor = estado de desenvolvimento real)' : '');
-    btn.innerHTML = `<span class="legend-dot" style="background:${LABEL_COLORS[l]}"></span>${escapeHtml(LABEL_NAMES_PT[l] || l)}${isReqComEstado ? ' <span class="legend-note">●estado</span>' : ''}`;
+    btn.title = 'Mostrar/ocultar ' + (LABEL_NAMES_PT[l] || l) + nota;
+    btn.innerHTML = `<span class="legend-dot" style="background:${LABEL_COLORS[l]}"></span>${escapeHtml(LABEL_NAMES_PT[l] || l)}${nota ? ' <span class="legend-note">●estado</span>' : ''}`;
     btn.addEventListener('click', () => toggleGroup(l));
     legend.appendChild(btn);
   });
