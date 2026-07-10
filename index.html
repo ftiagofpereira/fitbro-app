@@ -280,14 +280,14 @@
   .cypher-box.show{ display:block; }
 
   .composer{ border-top:1px solid var(--border); padding:14px 16px 16px; display:flex; gap:10px; align-items:flex-end; background: var(--surface); }
-  .composer-inner{ flex:1; display:flex; align-items:flex-end; gap:8px; background: var(--surface-2); border:1px solid var(--border); border-radius:18px; padding:6px 6px 6px 16px; transition: border-color .15s, box-shadow .15s; }
+  .composer-inner{ flex:1; display:flex; align-items:flex-end; gap:8px; background: var(--surface-2); border:1px solid var(--border); border-radius:20px; padding:8px 8px 8px 18px; transition: border-color .15s, box-shadow .15s; }
   .composer-inner:focus-within{ border-color: var(--accent-dim); box-shadow: 0 0 0 3px rgba(87,225,196,.10); }
   .composer textarea{
-    flex:1; resize:none; min-height:26px; max-height:200px; padding:9px 0; border:none; background:transparent;
-    color:var(--text); font-size:15px; font-family:inherit; outline:none; line-height:1.5;
+    flex:1; resize:none; min-height:48px; max-height:240px; padding:10px 0; border:none; background:transparent;
+    color:var(--text); font-size:15.5px; font-family:inherit; outline:none; line-height:1.5; overflow-y:auto;
   }
   .composer textarea::placeholder{ color: var(--text-dim); }
-  .send-btn{ background: linear-gradient(135deg, var(--accent), #3fc9ab); color:#062521; border-radius:14px; width:42px; height:42px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition: all .15s; box-shadow: 0 3px 10px rgba(87,225,196,.25); }
+  .send-btn{ background: linear-gradient(135deg, var(--accent), #3fc9ab); color:#062521; border-radius:16px; width:46px; height:46px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition: all .15s; box-shadow: 0 3px 10px rgba(87,225,196,.25); }
   .send-btn:hover:not(:disabled){ transform: scale(1.05); }
   .send-btn:disabled{ opacity:.35; cursor:not-allowed; box-shadow:none; }
 
@@ -847,6 +847,13 @@ Notas importantes para gerar Cypher:
 - Perguntas sobre que ideias/funcionalidades comerciais ainda não têm requisito formal ("gaps") → procura (:Funcionalidade) que NÃO tenha relação [:IMPLEMENTADO_POR] a sair para nenhum RequisitoFuncional.
 `.trim();
 
+// -------- Todas as respostas devem soar a português europeu, nunca do Brasil --------
+const PT_PT_STYLE = `Escreve sempre em português europeu (de Portugal) — nunca em português do Brasil. Regras de estilo obrigatórias:
+- Usa "tu" (nunca "você"); conjugações de tu (ex.: "podes", "tens", "queres").
+- Usa "estar a + infinitivo" (ex.: "estou a analisar") em vez do gerúndio contínuo brasileiro (ex.: "estou analisando").
+- Vocabulário de Portugal: "autocarro" (não "ônibus"), "ecrã" (não "tela"), "ficheiro" (não "arquivo"), "telemóvel" (não "celular"), "equipa" (não "time"), "atualizar" (não "atualizar" com pronúncia diferente, mas grafia PT), "pequeno-almoço", "comboio", "casa de banho", etc.
+- Ortografia do Acordo Ortográfico tal como usada em Portugal (ex.: "receção", "ação", "direção" sem "c" mudo — como é norma em PT).`;
+
 function buildSystemRoute() {
   const agentList = Object.entries(AGENT_PERSONAS).map(([k, v]) => `"${k}" (${v.label})`).join(', ');
   return `És o router automático de um chatbot híbrido sobre o projeto FitBro (software de gestão para ginásios, estúdios e personal trainers) e sobre o respetivo grafo de requisitos em Neo4j. O utilizador NUNCA escolhe manualmente a ferramenta ou o agente — decides tu sempre, sozinho, com base na pergunta.
@@ -866,8 +873,10 @@ Regras obrigatórias para tipo="grafo":
 2. Usa sempre os labels e nomes de propriedades exatamente como definidos acima.
 3. Limita resultados grandes com LIMIT 50 quando fizer sentido.
 
+${PT_PT_STYLE}
+
 Responde SOMENTE com um objeto JSON válido, sem markdown, sem texto antes ou depois, no formato exato:
-{"tipo": "grafo" | "pesquisa" | "geral" | "plano", "cypher": "<consulta cypher ou string vazia>", "explicacao": "<uma frase curta em português>", "agente": "<uma das chaves de agente>", "subtarefas": ["<subtarefa 1>", "<subtarefa 2>"]}
+{"tipo": "grafo" | "pesquisa" | "geral" | "plano", "cypher": "<consulta cypher ou string vazia>", "explicacao": "<uma frase curta em português europeu>", "agente": "<uma das chaves de agente>", "subtarefas": ["<subtarefa 1>", "<subtarefa 2>"]}
 Quando tipo != "plano", deixa "subtarefas" como uma lista vazia.`;
 }
 
@@ -879,6 +888,8 @@ function buildSystemGeneral(agentKey) {
 Contexto do projeto: FitBro é um software de gestão para ginásios, estúdios e personal trainers, com Backoffice web e App móvel, cujos requisitos estão modelados num grafo Neo4j (módulos, requisitos funcionais/não funcionais, atores, entidades de dados).
 
 ${tone.text}
+
+${PT_PT_STYLE}
 
 Dá sugestões concretas, opiniões fundamentadas, exemplos e boas práticas quando fizer sentido. Não inventes números ou dados concretos do grafo que não te tenham sido fornecidos — sugere reformular para consultar o grafo diretamente nesse caso.`;
 
@@ -892,20 +903,24 @@ Dá sugestões concretas, opiniões fundamentadas, exemplos e boas práticas qua
 }
 
 function buildSystemAnswer() {
-  return `És um assistente que explica, em português de forma natural, clara e concisa, o resultado de uma consulta ao grafo de requisitos do sistema FitBro.
+  return `És um assistente que explica, em português europeu, de forma natural, clara e concisa, o resultado de uma consulta ao grafo de requisitos do sistema FitBro.
 Recebes a pergunta original do utilizador, a consulta Cypher usada, e os resultados (em JSON).
 Regras:
 - Responde diretamente à pergunta, com base apenas nos resultados fornecidos.
 - Se os resultados estiverem vazios, diz claramente que não foram encontrados dados para essa pergunta.
 - Usa listas curtas quando o resultado tiver vários itens.
 - Não inventes informação que não esteja nos resultados.
-- Não repitas a consulta Cypher na resposta.`;
+- Não repitas a consulta Cypher na resposta.
+
+${PT_PT_STYLE}`;
 }
 
 function buildSystemSearchAnswer() {
-  return `És um assistente que responde em português com base em resultados de pesquisa na internet.
+  return `És um assistente que responde em português europeu com base em resultados de pesquisa na internet.
 Recebes a pergunta do utilizador e uma lista de resultados (título, url, excerto).
-Regras: sintetiza a resposta de forma direta e concisa; no fim, lista as fontes usadas como "Fontes:" seguido de uma lista de URLs; se os resultados não responderem à pergunta, diz isso claramente.`;
+Regras: sintetiza a resposta de forma direta e concisa; no fim, lista as fontes usadas como "Fontes:" seguido de uma lista de URLs; se os resultados não responderem à pergunta, diz isso claramente.
+
+${PT_PT_STYLE}`;
 }
 
 // -------- Utilitários de UI (chat) --------
@@ -1032,7 +1047,7 @@ async function quickTranslate(text, row) {
 async function quickSummarize(text, row) {
   const bubble = addMessage('bot', 'A resumir...', null, { minimal: true });
   try {
-    const summary = await callGroq('Resume o texto seguinte em português em no máximo 3 frases curtas. Responde apenas com o resumo.', text, 300);
+    const summary = await callGroq('Resume o texto seguinte em português europeu (de Portugal, nunca do Brasil — usa "tu", não "você") em no máximo 3 frases curtas. Responde apenas com o resumo.', text, 300);
     bubble.textContent = summary;
   } catch (err) { bubble.textContent = 'Não consegui resumir: ' + err.message; bubble.classList.add('error'); }
 }
@@ -2185,13 +2200,13 @@ async function runPlan(question, route, startedAt) {
 
   const synthPrompt = `Pergunta original do utilizador: "${question}"\n\nExecutei o seguinte plano de subtarefas e obtive estes resultados:\n\n` +
     steps.map((s, i) => `${i + 1}. ${s.text}\nResultado: ${s.answer}`).join('\n\n') +
-    `\n\nEscreve agora, em português, UMA resposta final coesa e bem organizada (podes usar secções curtas ou uma lista) que combine tudo isto e responda diretamente à pergunta original. Não te limites a repetir os passos — integra a informação.`;
+    `\n\nEscreve agora, em português europeu, UMA resposta final coesa e bem organizada (podes usar secções curtas ou uma lista) que combine tudo isto e responda diretamente à pergunta original. Não te limites a repetir os passos — integra a informação.`;
 
   let streamedAny = false;
   let finalAnswer = '';
   try {
     finalAnswer = await callGroqStream(
-      'És um assistente que sintetiza resultados de várias subtarefas de um plano numa resposta final clara e bem estruturada, em português.',
+      'És um assistente que sintetiza resultados de várias subtarefas de um plano numa resposta final clara e bem estruturada. ' + PT_PT_STYLE,
       synthPrompt, 900, null,
       (full) => {
         if (!streamedAny) { synthBubble.classList.remove('thinking'); streamedAny = true; }
@@ -2322,7 +2337,7 @@ input.addEventListener('keydown', (e) => {
 });
 input.addEventListener('input', () => {
   input.style.height = 'auto';
-  input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+  input.style.height = Math.min(Math.max(input.scrollHeight, 48), 240) + 'px';
 });
 document.getElementById('suggestions').addEventListener('click', (e) => {
   const q = e.target.getAttribute('data-q');
