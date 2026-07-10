@@ -122,7 +122,7 @@
   .tab-btn.active{ background: var(--accent); color:#062521; }
 
   /* Main layout */
-  .main{ display:grid; grid-template-columns: 1.15fr 1fr; gap:16px; align-items:start; }
+  .main{ display:grid; grid-template-columns: 1.15fr 1fr; gap:16px; align-items:stretch; }
 
   .panel{ background: var(--surface); border:1px solid var(--border); border-radius:16px; display:flex; flex-direction:column; overflow:hidden; }
 
@@ -145,7 +145,7 @@
   .graph-stats{ margin-left:auto; font-size:11px; color:var(--text-dim); white-space:nowrap; }
 
   .graph-body{ display:flex; gap:12px; padding:14px 16px; flex:1; min-height: 0; }
-  .graph-canvas-wrap{ position:relative; flex:1; min-width:0; height: 480px; background: var(--surface-3); border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,.02); }
+  .graph-canvas-wrap{ position:relative; flex:1; min-width:0; min-height:420px; background: var(--surface-3); border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,.02); }
   .graph-canvas-wrap:fullscreen{ height:100vh; border-radius:0; }
   #graphCanvas{ width:100%; height:100%; cursor:grab; }
   .graph-empty{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:24px; font-size:13.5px; color:var(--text-dim); background: var(--surface-3); }
@@ -159,7 +159,7 @@
   .legend-sep{ width:1px; align-self:stretch; background:var(--border); margin:0 2px; }
   .legend-item.legend-estado{ cursor:default; font-weight:600; }
 
-  .node-details{ width:240px; flex-shrink:0; background: var(--surface-2); border:1px solid var(--border); border-radius:14px; padding:16px; overflow-y:auto; height:480px; display:flex; flex-direction:column; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+  .node-details{ width:240px; flex-shrink:0; background: var(--surface-2); border:1px solid var(--border); border-radius:14px; padding:16px; overflow-y:auto; min-height:420px; display:flex; flex-direction:column; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
   .node-details-empty{ font-size:12.5px; color:var(--text-dim); line-height:1.5; }
   .detail-close{ display:none; }
   .detail-actions{ display:flex; gap:6px; margin-top:14px; }
@@ -184,7 +184,7 @@
   .cypher-hint{ font-size:10.5px; color:var(--text-dim); padding:0 16px 12px; margin-top:-8px; }
 
   /* ---- Chat panel ---- */
-  .chat-shell{ display:flex; height: min(76vh, 780px); min-height:540px; position:relative; }
+  .chat-shell{ display:flex; height: min(76vh, 780px); min-height:540px; position:relative; overflow:hidden; }
   .chat-shell.canvas-open .chat-main{ border-right:1px solid var(--border); }
 
   .sidebar-backdrop{ display:none; position:fixed; inset:0; background:rgba(5,9,18,.55); backdrop-filter: blur(1px); z-index:45; }
@@ -236,7 +236,7 @@
   .canvas-head input{ flex:1; min-width:0; background:none; border:none; color:var(--text); font-family:var(--display); font-weight:600; font-size:13.5px; }
   .canvas-head input:focus{ outline:none; }
   .canvas-toolbar{ display:flex; gap:6px; padding:8px 12px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
-  .canvas-body{ flex:1; overflow-y:auto; padding:0; display:flex; flex-direction:column; }
+  .canvas-body{ flex:1; min-height:0; overflow-y:auto; padding:0; display:flex; flex-direction:column; }
   .canvas-editor{ flex:1; width:100%; border:none; resize:none; background: var(--surface); color: var(--text); font-family: var(--mono); font-size:13px; line-height:1.65; padding:16px; box-sizing:border-box; }
   .canvas-editor:focus{ outline:none; }
   .canvas-doclist{ display:flex; flex-direction:column; gap:3px; padding:8px; border-bottom:1px solid var(--border); max-height:120px; overflow-y:auto; }
@@ -251,7 +251,7 @@
   .conv-sidebar{ width:220px; flex-shrink:0; border-right:1px solid var(--border); background: var(--surface-3); display:flex; flex-direction:column; transition: transform .25s ease; }
   .new-conv-btn{ margin:12px 14px 8px; background: var(--surface-2); border:1px solid var(--accent-dim); color: var(--accent); font-size:12.5px; font-weight:700; padding:10px 10px; border-radius:10px; transition: all .15s; }
   .new-conv-btn:hover{ background: var(--accent); color:#062521; box-shadow: 0 4px 14px rgba(87,225,196,.25); }
-  .conv-list{ flex:1; overflow-y:auto; padding:4px 10px 12px; display:flex; flex-direction:column; gap:4px; }
+  .conv-list{ flex:1; min-height:0; overflow-y:auto; padding:4px 10px 12px; display:flex; flex-direction:column; gap:4px; }
   .conv-item{ display:flex; align-items:center; justify-content:space-between; gap:6px; padding:10px 11px; border-radius:10px; cursor:pointer; transition: background .15s; }
   .conv-item:hover{ background: var(--surface-2); }
   .conv-item.active{ background: var(--user-bubble); }
@@ -262,9 +262,9 @@
   .conv-delete:hover{ color: var(--error); background: rgba(241,106,106,0.12); }
   .conv-empty{ font-size:11.5px; color:var(--text-dim); padding:10px; line-height:1.5; }
 
-  .chat-main{ flex:1; min-width:0; display:flex; flex-direction:column; background: var(--surface); }
+  .chat-main{ flex:1; min-width:0; min-height:0; display:flex; flex-direction:column; background: var(--surface); }
   .chat-main-head{ display:none; }
-  .chat-log{ padding:22px 22px 10px; display:flex; flex-direction:column; gap:16px; flex:1; overflow-y:auto; scroll-behavior:smooth; }
+  .chat-log{ padding:22px 22px 10px; display:flex; flex-direction:column; gap:16px; flex:1; min-height:0; overflow-y:auto; scroll-behavior:smooth; }
   .msg{ max-width:80%; display:flex; flex-direction:column; gap:6px; animation: msgIn .18s ease; }
   @keyframes msgIn{ from{ opacity:0; transform: translateY(4px); } to{ opacity:1; transform:none; } }
   .msg.user{ align-self:flex-end; align-items:flex-end; }
@@ -405,7 +405,7 @@
     .chat-shell{ height: calc(100dvh - 148px); min-height:420px; }
     .chat-log{ padding:14px 12px 6px; }
     .bubble{ font-size:14px; padding:11px 14px; }
-    .chat-toolbar{ padding:8px 10px; }
+    .chat-toolbar{ flex-wrap:wrap; overflow-x:visible; padding:8px 10px; }
     .tb-btn{ padding:7px 10px; font-size:12px; }
     .composer{ padding:8px 8px 10px; }
     .composer textarea{ font-size:16px; } /* >=16px evita zoom automático do Safari/Chrome iOS/Android */
@@ -908,7 +908,9 @@ Recebes a pergunta original do utilizador, a consulta Cypher usada, e os resulta
 Regras:
 - Responde diretamente à pergunta, com base apenas nos resultados fornecidos.
 - Se os resultados estiverem vazios, diz claramente que não foram encontrados dados para essa pergunta.
-- Usa listas curtas quando o resultado tiver vários itens.
+- CRÍTICO: se a pergunta pedir uma lista (ex.: "lista todos os requisitos", "quais são os X"), tens de incluir TODOS os itens dos resultados, sem exceção — nunca cortes a lista a meio, nunca digas "e outros", "etc.", "entre outros" nem pares apenas uma amostra. O número de registos indicado no fim diz-te quantos itens tens de listar; conta e confirma que os incluíste todos.
+- Para listas longas, usa um formato compacto de uma linha por item (ex.: "RF-01: descrição curta") em vez de parágrafos, para caberes todos os itens.
+- Se vires o aviso "[AVISO: os resultados foram cortados...]", informa o utilizador claramente de que a lista pode estar incompleta por ser demasiado grande, e sugere reduzir com LIMIT ou filtros mais específicos.
 - Não inventes informação que não esteja nos resultados.
 - Não repitas a consulta Cypher na resposta.
 
@@ -2078,11 +2080,17 @@ async function runToolForQuestion(question, route, opts) {
     }
     setStageStatus('tool', 'done');
     setStageStatus('answer', 'active');
-    const resultsForModel = JSON.stringify(results).slice(0, 12000);
-    const answerPrompt = `Pergunta do utilizador: "${question}"\n\nConsulta Cypher usada: ${cypher}\n\nResultados (JSON): ${resultsForModel}\n\nNúmero de registos: ${results.length}`;
+    const fullResultsJson = JSON.stringify(results);
+    const RESULTS_CHAR_CAP = 60000;
+    const wasTruncated = fullResultsJson.length > RESULTS_CHAR_CAP;
+    const resultsForModel = fullResultsJson.slice(0, RESULTS_CHAR_CAP);
+    const answerPrompt = `Pergunta do utilizador: "${question}"\n\nConsulta Cypher usada: ${cypher}\n\nResultados (JSON): ${resultsForModel}${wasTruncated ? '\n\n[AVISO: os resultados foram cortados por serem demasiado grandes — informa o utilizador de que a lista pode estar incompleta e sugere reduzir com LIMIT ou filtros.]' : ''}\n\nNúmero de registos: ${results.length}`;
+    // A resposta precisa de espaço suficiente para listar TODOS os registos
+    // devolvidos (ex.: dezenas de requisitos) sem cortar a meio.
+    const dynamicMaxTokens = Math.min(4000, 500 + results.length * 60);
     const answer = opts.stream
-      ? await callGroqStream(buildSystemAnswer(), answerPrompt, 800, null, opts.onDelta)
-      : await callGroq(buildSystemAnswer(), answerPrompt, 800);
+      ? await callGroqStream(buildSystemAnswer(), answerPrompt, dynamicMaxTokens, null, opts.onDelta)
+      : await callGroq(buildSystemAnswer(), answerPrompt, dynamicMaxTokens);
     setStageStatus('answer', 'done');
     return { answer, cypher, tool: 'grafo', badge: '🔗 Ferramenta: Grafo Neo4j' };
   }
@@ -2760,16 +2768,24 @@ function renderGraph(cypher, params) {
     if (!network) {
       nodesDS = new vis.DataSet(nodes);
       edgesDS = new vis.DataSet(edges);
-      network = new vis.Network(document.getElementById('graphCanvas'), { nodes: nodesDS, edges: edgesDS }, VIS_OPTIONS);
-      network.on('click', onGraphClick);
-      network.on('doubleClick', onGraphDoubleClick);
-      network.on('hoverNode', p => highlightNeighbors(p.node));
-      network.on('blurNode', clearHighlight);
-      network.once('stabilizationIterationsDone', () => {
-        if (physicsOn) network.setOptions({ physics: { enabled: false } });
-        network.fit({ animation: { duration: 400, easingFunction: 'easeInOutQuad' } });
+      // Cria a rede só no próximo frame: garante que o contentor já teve uma
+      // oportunidade de layout com o tamanho final (evita o bug do grafo
+      // "em branco" até se clicar em ecrã inteiro, causado por o vis-network
+      // medir o contentor antes deste ter as dimensões definitivas).
+      requestAnimationFrame(() => {
+        const canvasEl = document.getElementById('graphCanvas');
+        network = new vis.Network(canvasEl, { nodes: nodesDS, edges: edgesDS }, VIS_OPTIONS);
+        network.on('click', onGraphClick);
+        network.on('doubleClick', onGraphDoubleClick);
+        network.on('hoverNode', p => highlightNeighbors(p.node));
+        network.on('blurNode', clearHighlight);
+        network.once('stabilizationIterationsDone', () => {
+          if (physicsOn) network.setOptions({ physics: { enabled: false } });
+          network.fit({ animation: { duration: 400, easingFunction: 'easeInOutQuad' } });
+        });
+        setupGraphResizeHandling();
+        forceGraphRedrawSequence();
       });
-      setupGraphResizeHandling();
     } else {
       nodesDS.clear(); edgesDS.clear();
       nodesDS.add(nodes); edgesDS.add(edges);
@@ -2779,17 +2795,30 @@ function renderGraph(cypher, params) {
         network.fit({ animation: { duration: 400, easingFunction: 'easeInOutQuad' } });
       });
       network.stabilize();
+      forceGraphRedrawSequence();
     }
-    // Garante que o vis-network recalcula o tamanho do canvas assim que o
-    // painel/separador se torna visível (corrige o grafo "em branco" no
-    // telemóvel enquanto o separador Grafo não tinha sido tornado ativo).
-    requestAnimationFrame(() => { if (network) { network.redraw(); network.fit(); } });
     updateLegend(nodes);
     updateStats();
     clearDetails();
   }).catch(err => {
     emptyEl.textContent = 'Erro ao consultar o grafo: ' + err.message;
     emptyEl.style.display = 'flex';
+  });
+}
+
+// -------- Corrige o grafo "em branco": força o vis-network a remedir e a
+// reajustar o contentor em várias janelas de tempo (frame seguinte, depois de
+// possíveis transições CSS resolverem, e um pouco mais tarde), em vez de
+// depender só de o utilizador acionar o ecrã inteiro ou mudar de separador. --------
+function forceGraphRedrawSequence() {
+  const delays = [0, 60, 250, 600];
+  delays.forEach(ms => {
+    setTimeout(() => {
+      if (!network) return;
+      network.setSize('100%', '100%');
+      network.redraw();
+      network.fit({ animation: false });
+    }, ms);
   });
 }
 
