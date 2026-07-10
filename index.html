@@ -2524,21 +2524,19 @@ function buildGraphFromRecords(records) {
     const label = n.labels[0];
     const props = {}; for (const k in n.properties) props[k] = plainValue(n.properties[k]);
     // Os nós :EstadoDesenvolvimento trazem a sua própria cor real (verde/amarelo/laranja) — usa-a diretamente.
-    const baseColor = (label === 'EstadoDesenvolvimento' && props.cor) ? props.cor : (LABEL_COLORS[label] || '#6b7a9c');
+    let baseColor = (label === 'EstadoDesenvolvimento' && props.cor) ? props.cor : (LABEL_COLORS[label] || '#6b7a9c');
     // Se já sabemos (de uma consulta anterior nesta sessão) qual o estado real
-    // deste requisito, guarda-o para o mostrar como CONTORNO colorido — o
-    // preenchimento do nó mantém sempre a cor do seu tipo (igual à legenda);
-    // só o contorno muda consoante o progresso (verde/amarelo/laranja).
-    // Isto evita que a cor do nó deixe de corresponder à legenda de tipos.
+    // deste requisito, aplica-o já aqui — mesmo que esta consulta em concreto
+    // não traga a relação TEM_ESTADO (ex.: pesquisa, expandir vizinhos, presets
+    // sem relação de estado). Isto garante que a cor nunca "volta a trás".
     const estadoConhecido = (label === 'RequisitoFuncional' || label === 'RequisitoNaoFuncional') ? estadoByNodeId.get(id) : null;
-    const borderColor = estadoConhecido ? estadoConhecido.cor : 'rgba(255,255,255,0.2)';
+    if (estadoConhecido) baseColor = estadoConhecido.cor;
     nodeMap.set(id, {
       id,
       label: truncate(bestCaption(props, n.labels), 28),
       title: bestCaption(props, n.labels),
       group: label,
-      color: { background: baseColor, border: borderColor, highlight: { background: baseColor, border: '#fff' } },
-      borderWidth: estadoConhecido ? 3 : 2,
+      color: { background: baseColor, border: 'rgba(255,255,255,0.2)', highlight: { background: baseColor, border: '#fff' } },
       font: { color: '#0B1220', size: 12, face: 'Space Grotesk, sans-serif' },
       shape: 'dot',
       size: label === 'Modulo' ? 17 : 12,
@@ -2576,14 +2574,12 @@ function buildGraphFromRecords(records) {
     for (const key of rec.keys) dispatch(rec.get(key));
   }
 
-  // Sempre que a relação TEM_ESTADO vem incluída na consulta, marca o próprio
-  // requisito (RF/RNF) com um CONTORNO na cor real do seu estado de desenvolvimento
+  // Sempre que a relação TEM_ESTADO vem incluída na consulta, pinta o próprio
+  // requisito (RF/RNF) com a cor real do seu estado de desenvolvimento
   // (verde = Desenvolvido, amarelo = Em desenvolvimento, laranja = Por desenvolver),
-  // em vez de substituir o azul/vermelho do tipo — assim o preenchimento do nó
-  // continua sempre a corresponder à legenda de tipos, e o progresso fica visível
-  // através do contorno colorido. E memoriza essa cor para esta continuar correta
-  // em consultas futuras (pesquisa, expandir vizinhos, presets) mesmo que não
-  // voltem a trazer a relação TEM_ESTADO.
+  // em vez do azul/vermelho genérico — assim o progresso fica visível de imediato.
+  // E memoriza essa cor para esta continuar correta em consultas futuras (pesquisa,
+  // expandir vizinhos, presets) mesmo que não voltem a trazer a relação TEM_ESTADO.
   for (const edge of edgeMap.values()) {
     if (edge.label !== 'TEM_ESTADO') continue;
     const fromNode = nodeMap.get(edge.from);
@@ -2591,8 +2587,8 @@ function buildGraphFromRecords(records) {
     if (!fromNode || !toNode || toNode.group !== 'EstadoDesenvolvimento') continue;
     const estadoCor = toNode._props.cor || LABEL_COLORS.EstadoDesenvolvimento;
     const estadoNome = toNode._props.nome;
-    fromNode.color = { ...fromNode.color, border: estadoCor, highlight: { background: fromNode.color.background, border: '#fff' } };
-    fromNode.borderWidth = 3;
+    fromNode.color = { background: estadoCor, border: 'rgba(255,255,255,0.25)', highlight: { background: estadoCor, border: '#fff' } };
+    fromNode.font = { ...fromNode.font, color: '#0B1220' };
     fromNode._estadoNome = estadoNome;
     fromNode._estadoCor = estadoCor;
     estadoByNodeId.set(fromNode.id, { cor: estadoCor, nome: estadoNome });
@@ -2637,11 +2633,11 @@ function updateLegend(nodes) {
 
   LABEL_ORDER.filter(l => present.has(l)).forEach(l => {
     const isReq = l === 'RequisitoFuncional' || l === 'RequisitoNaoFuncional';
-    const nota = !isReq || reqComEstado === 0 ? '' : (reqSemEstado === 0 ? ' (contorno = estado real)' : ' (contorno = estado real quando conhecido)');
+    const nota = !isReq || reqComEstado === 0 ? '' : (reqSemEstado === 0 ? ' (cor = estado real)' : ' (cor = estado real quando conhecido)');
     const btn = document.createElement('button');
     btn.className = 'legend-item' + (hiddenGroups.has(l) ? ' off' : '');
     btn.title = 'Mostrar/ocultar ' + (LABEL_NAMES_PT[l] || l) + nota;
-    btn.innerHTML = `<span class="legend-dot" style="background:${LABEL_COLORS[l]}"></span>${escapeHtml(LABEL_NAMES_PT[l] || l)}${nota ? ' <span class="legend-note">◐estado</span>' : ''}`;
+    btn.innerHTML = `<span class="legend-dot" style="background:${LABEL_COLORS[l]}"></span>${escapeHtml(LABEL_NAMES_PT[l] || l)}${nota ? ' <span class="legend-note">●estado</span>' : ''}`;
     btn.addEventListener('click', () => toggleGroup(l));
     legend.appendChild(btn);
   });
@@ -2660,8 +2656,8 @@ function updateLegend(nodes) {
       const cor = estadosPresentes.get(nome);
       const item = document.createElement('span');
       item.className = 'legend-item legend-estado';
-      item.title = 'Estado real (contorno do nó): ' + nome;
-      item.innerHTML = `<span class="legend-dot" style="background:transparent;border:2px solid ${cor};box-sizing:border-box;"></span>${escapeHtml(nome)}`;
+      item.title = 'Estado real: ' + nome;
+      item.innerHTML = `<span class="legend-dot" style="background:${cor}"></span>${escapeHtml(nome)}`;
       legend.appendChild(item);
     });
   }
