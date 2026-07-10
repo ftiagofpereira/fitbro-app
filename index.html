@@ -144,8 +144,8 @@
   .icon-btn:hover{ color:var(--text); border-color:var(--accent-dim); }
   .graph-stats{ margin-left:auto; font-size:11px; color:var(--text-dim); white-space:nowrap; }
 
-  .graph-body{ display:flex; gap:12px; padding:14px 16px; flex:1; min-height: 0; }
-  .graph-canvas-wrap{ position:relative; flex:1; min-width:0; min-height:420px; background: var(--surface-3); border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,.02); }
+  .graph-body{ display:flex; gap:12px; padding:14px 16px; flex:1; min-height: 0; max-height:100%; }
+  .graph-canvas-wrap{ position:relative; flex:1; min-width:0; min-height:420px; max-height:100%; background: var(--surface-3); border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,.02); }
   .graph-canvas-wrap:fullscreen{ height:100vh; border-radius:0; }
   #graphCanvas{ width:100%; height:100%; cursor:grab; }
   .graph-empty{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:24px; font-size:13.5px; color:var(--text-dim); background: var(--surface-3); }
@@ -159,7 +159,7 @@
   .legend-sep{ width:1px; align-self:stretch; background:var(--border); margin:0 2px; }
   .legend-item.legend-estado{ cursor:default; font-weight:600; }
 
-  .node-details{ width:240px; flex-shrink:0; background: var(--surface-2); border:1px solid var(--border); border-radius:14px; padding:16px; overflow-y:auto; min-height:420px; display:flex; flex-direction:column; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+  .node-details{ width:240px; flex-shrink:0; background: var(--surface-2); border:1px solid var(--border); border-radius:14px; padding:16px; overflow-y:auto; min-height:420px; max-height:100%; display:flex; flex-direction:column; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
   .node-details-empty{ font-size:12.5px; color:var(--text-dim); line-height:1.5; }
   .detail-close{ display:none; }
   .detail-actions{ display:flex; gap:6px; margin-top:14px; }
@@ -366,10 +366,16 @@
     .tabs{ display:flex; }
     .main{ grid-template-columns: 1fr; }
     .panel{ display:none; }
-    .panel.active{ display:flex; }
+    .panel.active{ display:flex; height: calc(100dvh - 132px); max-height: calc(100dvh - 132px); min-height:360px; overflow-y:auto; }
   }
   @media (min-width: 981px){
     .panel{ display:flex !important; }
+  }
+  @media (max-width: 900px){
+    .graph-body{ flex-direction:column; }
+    .node-details, .graph-canvas-wrap{ width:100%; }
+    .graph-canvas-wrap{ flex:1 1 auto; min-height:260px; }
+    .node-details{ flex:0 0 auto; min-height:0; max-height:180px; }
   }
   @media (max-width: 720px){
     body{ padding: 8px 5px calc(8px + env(safe-area-inset-bottom, 0px)); }
@@ -392,7 +398,7 @@
     .graph-actions{ gap:5px; }
     .icon-btn{ padding:7px 9px; font-size:11.5px; }
     .graph-body{ position:relative; padding:0 10px 10px; }
-    .graph-canvas-wrap{ width:100%; height: calc(100dvh - 322px); min-height:380px; border-radius:14px; }
+    .graph-canvas-wrap{ width:100%; min-height:280px; border-radius:14px; }
     .custom-cypher, .cypher-hint{ display:none; } /* pouco relevante no ecrã pequeno, evita scroll excessivo */
 
     /* Painel de detalhes do nó vira uma folha que desliza de baixo, só quando há seleção */
@@ -431,7 +437,7 @@
     .tb-btn{ padding:9px; }
   }
   @media (max-width: 380px){
-    .graph-canvas-wrap{ height: calc(100dvh - 342px); min-height:320px; }
+    .graph-canvas-wrap{ min-height:240px; }
   }
   @media (prefers-reduced-motion: reduce){
     html{ scroll-behavior:auto; }
@@ -2835,7 +2841,6 @@ function forceGraphRedrawSequence() {
   delays.forEach(ms => {
     setTimeout(() => {
       if (!network) return;
-      network.setSize('100%', '100%');
       network.redraw();
       network.fit({ animation: false });
     }, ms);
